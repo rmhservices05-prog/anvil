@@ -11,16 +11,16 @@ export function Button({
   variant?: 'default' | 'ghost' | 'amber' | 'danger' | 'outline';
 }) {
   const styles: Record<string, string> = {
-    default: 'bg-amber-500 text-slate-950 hover:bg-amber-400',
-    ghost: 'bg-white/5 text-slate-200 hover:bg-white/10 border border-white/5',
-    amber: 'bg-amber-600/90 text-white hover:bg-amber-500',
-    danger: 'bg-hostile/90 text-white hover:bg-hostile',
-    outline: 'border border-white/10 bg-transparent text-slate-200 hover:bg-white/5',
+    default: 'border border-[#2d5fd6] bg-[#1f5fd1] text-white hover:bg-[#255fe0]',
+    ghost: 'border border-white/[0.07] bg-[#151515] text-[#d6d6d6] hover:bg-[#1b1b1b]',
+    amber: 'border border-[#7a5b22] bg-[#d7a84b] text-[#0b0b0b] hover:bg-[#e0b65c]',
+    danger: 'border border-[#7f3836] bg-[#d95c59] text-white hover:bg-[#e06965]',
+    outline: 'border border-white/[0.07] bg-[#101010] text-[#d6d6d6] hover:bg-[#171717]',
   };
   return (
     <button
       className={cn(
-        'inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition',
+        'inline-flex items-center justify-center gap-2 rounded-[4px] px-3 py-2 text-[12px] font-medium tracking-normal transition',
         'disabled:pointer-events-none disabled:opacity-50',
         styles[variant],
         className,
@@ -46,13 +46,17 @@ export function Badge({
   className?: string;
 }) {
   const styles: Record<string, string> = {
-    muted: 'bg-white/6 text-slate-300 border-white/10',
-    success: 'bg-trust/10 text-trust border-trust/20',
-    danger: 'bg-hostile/10 text-hostile border-hostile/20',
-    warn: 'bg-amber-500/10 text-amber-200 border-amber-500/20',
-    amber: 'bg-amber-500/15 text-amber-100 border-amber-500/20',
+    muted: 'bg-[#191919] text-[#bdbdbd] border-white/[0.08]',
+    success: 'bg-[#102018] text-[#72c8a0] border-[#1f5f47]',
+    danger: 'bg-[#241716] text-[#e28a86] border-[#6d3a38]',
+    warn: 'bg-[#241d11] text-[#e0b466] border-[#6b5323]',
+    amber: 'bg-[#221a10] text-[#e0b466] border-[#6b5323]',
   };
-  return <span className={cn('rounded-full border px-3 py-1 text-xs font-medium tracking-wide', styles[tone], className)}>{children}</span>;
+  return (
+    <span className={cn('inline-flex items-center rounded-[4px] border px-2 py-1 text-[10px] font-medium tracking-[0.12em]', styles[tone], className)}>
+      {children}
+    </span>
+  );
 }
 
 export function Progress({
@@ -63,13 +67,13 @@ export function Progress({
   tone?: 'amber' | 'trust' | 'hostile';
 }) {
   const map = {
-    amber: 'from-amber-500 via-amber-400 to-amber-200',
-    trust: 'from-trust via-trust to-emerald-200',
-    hostile: 'from-hostile via-hostile to-rose-300',
+    amber: 'bg-[#d7a84b]',
+    trust: 'bg-[#36b37e]',
+    hostile: 'bg-[#d95c59]',
   };
   return (
-    <div className="h-2 w-full overflow-hidden rounded-full bg-white/6">
-      <div className={cn('h-full rounded-full bg-gradient-to-r transition-all', map[tone])} style={{ width: `${Math.max(4, Math.min(100, value))}%` }} />
+    <div className="h-1.5 w-full overflow-hidden rounded-[2px] bg-white/[0.06]">
+      <div className={cn('h-full rounded-[2px] transition-all', map[tone])} style={{ width: `${Math.max(4, Math.min(100, value))}%` }} />
     </div>
   );
 }
@@ -88,14 +92,14 @@ export function Drawer({
   return (
     <div
       className={cn(
-        'fixed inset-y-0 right-0 z-50 w-full max-w-md border-l border-white/10 bg-[#0b0f13]/96 shadow-2xl backdrop-blur-xl transition-transform duration-300',
+        'fixed inset-y-0 right-0 z-50 w-full max-w-md border-l border-white/[0.08] bg-[#0d0d0d] shadow-none transition-transform duration-300',
         open ? 'translate-x-0' : 'translate-x-full',
       )}
     >
-      <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
+      <div className="flex items-center justify-between border-b border-white/[0.08] px-5 py-4">
         <div>
           <div className="micro-label">Operator detail</div>
-          <div className="text-lg font-semibold text-white">{title}</div>
+          <div className="text-sm font-semibold text-[#f3f3f3]">{title}</div>
         </div>
         <Button variant="ghost" onClick={onClose}>
           Close

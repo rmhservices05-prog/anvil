@@ -13,16 +13,15 @@ export function ScenarioCanvas({
 }) {
   const coord = (x: number, y: number) => ({ left: `${x}%`, top: `${y}%` });
   return (
-    <Card className="relative min-h-[520px] overflow-hidden">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.04),transparent_40%)]" />
-      <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent,rgba(255,255,255,0.02))]" />
-      <div className="absolute inset-0 opacity-60 [background-image:linear-gradient(rgba(255,255,255,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.04)_1px,transparent_1px)] [background-size:24px_24px]" />
-      <div className="relative flex items-center justify-between border-b border-white/6 px-4 py-4">
+    <Card className="relative min-h-[520px] overflow-hidden border-white/[0.07] bg-[#171717]">
+      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),transparent_18%)]" />
+      <div className="absolute inset-0 opacity-55 [background-image:linear-gradient(rgba(255,255,255,0.035)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.035)_1px,transparent_1px)] [background-size:28px_28px]" />
+      <div className="relative flex items-center justify-between border-b border-white/[0.06] px-4 py-4">
         <div>
           <div className="micro-label">Scenario canvas</div>
-          <div className="text-base font-semibold text-white">Network and attack pressure in motion</div>
+          <div className="text-[13px] font-medium text-[#f3f3f3]">Network and attack pressure in motion</div>
         </div>
-        <Badge tone="amber">Animated link flow</Badge>
+        <Badge tone="muted">Animated link flow</Badge>
       </div>
       <div className="relative h-[460px]">
         <svg className="absolute inset-0 h-full w-full">
@@ -37,12 +36,17 @@ export function ScenarioCanvas({
                   y1={`${from.y}%`}
                   x2={`${to.x}%`}
                   y2={`${to.y}%`}
-                  className={cn(link.hostile ? 'stroke-hostile/80' : link.contested ? 'stroke-amber-300/70' : 'stroke-trust/80')}
+                  className={cn(link.hostile ? 'stroke-[#d95c59]/75' : link.contested ? 'stroke-[#d7a84b]/65' : 'stroke-[#36b37e]/75')}
                   strokeWidth={link.intensity * 5 + 1}
                   strokeLinecap="round"
                   strokeDasharray={link.hostile ? '8 10' : link.contested ? '4 8' : '0'}
                 />
-                <circle cx={`${to.x}%`} cy={`${to.y}%`} r="2.5%" className={cn(link.hostile ? 'fill-hostile/50' : link.contested ? 'fill-amber-300/35' : 'fill-trust/30')} />
+                <circle
+                  cx={`${to.x}%`}
+                  cy={`${to.y}%`}
+                  r="2.25%"
+                  className={cn(link.hostile ? 'fill-[#d95c59]/35' : link.contested ? 'fill-[#d7a84b]/28' : 'fill-[#36b37e]/22')}
+                />
               </g>
             );
           })}
@@ -56,21 +60,34 @@ export function ScenarioCanvas({
           >
             <div
               className={cn(
-                'relative rounded-2xl border px-3 py-3 shadow-lg backdrop-blur-md transition',
+                'relative rounded-[4px] border px-3 py-3 transition',
                 node.role === 'adversary'
-                  ? 'border-hostile/40 bg-hostile/10'
+                  ? 'border-[#6d3a38] bg-[#241716]'
                   : node.lineageState === 'contested'
-                    ? 'border-amber-500/30 bg-amber-500/10'
+                    ? 'border-[#6b5323] bg-[#241d11]'
                     : node.lineageState === 'quarantined'
-                      ? 'border-hostile/30 bg-white/5'
-                      : 'border-white/8 bg-black/30',
+                      ? 'border-white/[0.08] bg-[#121212]'
+                      : 'border-white/[0.08] bg-[#121212]',
               )}
             >
               <div className="flex items-center gap-2">
-                <span className={cn('h-2.5 w-2.5 rounded-full animate-pulseSoft', node.role === 'adversary' ? 'bg-hostile' : node.lineageState === 'contested' ? 'bg-amber-300' : node.lineageState === 'recovered' ? 'bg-trust' : 'bg-trust/70')} />
+                <span
+                  className={cn(
+                    'h-2.5 w-2.5 animate-pulseSoft rounded-full',
+                    node.role === 'adversary'
+                      ? 'bg-[#d95c59]'
+                      : node.lineageState === 'contested'
+                        ? 'bg-[#d7a84b]'
+                        : node.lineageState === 'recovered'
+                          ? 'bg-[#36b37e]'
+                          : 'bg-[#7d7d7d]',
+                  )}
+                />
                 <div>
-                  <div className="text-sm font-semibold text-white">{node.label}</div>
-                  <div className="text-xs text-slate-400">{node.lineageState.replace('-', ' ')} status · {node.trust}%</div>
+                  <div className="text-[12px] font-medium text-[#f3f3f3]">{node.label}</div>
+                  <div className="text-[11px] text-[#8c8c8c]">
+                    {node.lineageState.replace('-', ' ')} · {node.trust}%
+                  </div>
                 </div>
               </div>
             </div>

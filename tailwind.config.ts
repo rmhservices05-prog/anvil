@@ -5,37 +5,38 @@ export default {
   theme: {
     extend: {
       colors: {
-        canvas: '#0a0d10',
-        panel: '#11161c',
-        panel2: '#151b21',
-        line: '#26303a',
+        canvas: '#0b0b0b',
+        panel: '#171717',
+        panel2: '#1a1a1a',
+        line: '#252525',
         amber: {
-          50: '#fff6e8',
-          100: '#ffe8c2',
-          200: '#ffd38a',
-          300: '#ffbe57',
-          400: '#f9a93a',
-          500: '#e48a1e',
-          600: '#be6717',
-          700: '#934e16',
+          50: '#fff7ea',
+          100: '#f8e4b9',
+          200: '#e8c87f',
+          300: '#d7a84b',
+          400: '#c98f33',
+          500: '#ab7227',
+          600: '#8e5921',
+          700: '#6f461c',
         },
-        trust: '#4fd0b0',
-        hostile: '#ff6f61',
-        muted: '#7d8894',
+        trust: '#36b37e',
+        hostile: '#d95c59',
+        muted: '#8c8c8c',
+        primary: '#1f5fd1',
       },
       boxShadow: {
-        soft: '0 0 0 1px rgba(255,255,255,0.04), 0 18px 50px rgba(0,0,0,0.32)',
-        amber: '0 0 0 1px rgba(249,169,58,0.25), 0 0 28px rgba(249,169,58,0.12)',
+        soft: '0 0 0 1px rgba(255,255,255,0.04), 0 12px 34px rgba(0,0,0,0.24)',
+        amber: '0 0 0 1px rgba(215,168,75,0.18), 0 0 20px rgba(215,168,75,0.08)',
       },
       backgroundImage: {
         'grid-fine':
-          'linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px)',
-        'ambient':
-          'radial-gradient(circle at top left, rgba(249,169,58,0.14), transparent 30%), radial-gradient(circle at 75% 10%, rgba(79,208,176,0.10), transparent 20%), radial-gradient(circle at 80% 80%, rgba(255,111,97,0.08), transparent 22%)',
+          'linear-gradient(rgba(255,255,255,0.028) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.028) 1px, transparent 1px)',
+        ambient:
+          'radial-gradient(circle at top left, rgba(31,95,209,0.06), transparent 28%), radial-gradient(circle at 78% 12%, rgba(54,179,126,0.05), transparent 20%)',
       },
       keyframes: {
         pulseSoft: {
-          '0%, 100%': { opacity: '0.68' },
+          '0%, 100%': { opacity: '0.72' },
           '50%': { opacity: '1' },
         },
         sweep: {
