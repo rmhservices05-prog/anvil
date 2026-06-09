@@ -13,8 +13,8 @@ export function AttackLog({
     <Card className="space-y-3">
       <div className="flex items-center justify-between">
         <div>
-          <div className="micro-label">Attack stream log</div>
-          <div className="text-base font-semibold text-white">Timestamped hostile and recovery events</div>
+          <div className="micro-label">Event log</div>
+          <div className="text-base font-semibold text-white">Timestamped command and link events</div>
         </div>
         <Badge tone="warn">Live feed</Badge>
       </div>

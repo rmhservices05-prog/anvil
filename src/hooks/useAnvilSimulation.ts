@@ -211,18 +211,18 @@ function recompute(state: SimulationState, seed = 77): SimulationState {
 }
 
 function initialState(): SimulationState {
-  const scenario = scenarioForEnvironment('mesh-relay');
+  const scenario = scenarioForEnvironment('ground-air');
   const base: SimulationState = {
     scenario,
     phase: 'nominal',
-    environment: 'mesh-relay',
+    environment: 'ground-air',
     threatPressure: 12,
     trustState: 'trusted',
-    attackTypes: ['spoofed-commands', 'burst-jamming'],
-    attackIntensity: 48,
-    attackPersistence: 40,
-    attackCoordination: 52,
-    attackStealth: 34,
+    attackTypes: [],
+    attackIntensity: 18,
+    attackPersistence: 12,
+    attackCoordination: 14,
+    attackStealth: 10,
     isRunning: false,
     timeElapsed: 0,
     confidence: 92,

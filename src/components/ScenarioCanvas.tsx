@@ -20,7 +20,7 @@ export function ScenarioCanvas({
       <div className="relative flex items-center justify-between border-b border-white/6 px-4 py-4">
         <div>
           <div className="micro-label">Scenario canvas</div>
-          <div className="text-base font-semibold text-white">Network, attack pressure, and lineage state in motion</div>
+          <div className="text-base font-semibold text-white">Network and attack pressure in motion</div>
         </div>
         <Badge tone="amber">Animated link flow</Badge>
       </div>
@@ -70,7 +70,7 @@ export function ScenarioCanvas({
                 <span className={cn('h-2.5 w-2.5 rounded-full animate-pulseSoft', node.role === 'adversary' ? 'bg-hostile' : node.lineageState === 'contested' ? 'bg-amber-300' : node.lineageState === 'recovered' ? 'bg-trust' : 'bg-trust/70')} />
                 <div>
                   <div className="text-sm font-semibold text-white">{node.label}</div>
-                  <div className="text-xs text-slate-400">{node.lineageState} · {node.trust}%</div>
+                  <div className="text-xs text-slate-400">{node.lineageState.replace('-', ' ')} status · {node.trust}%</div>
                 </div>
               </div>
             </div>
