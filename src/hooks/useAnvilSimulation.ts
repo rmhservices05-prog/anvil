@@ -4,8 +4,11 @@ import {
   EnvironmentId,
   ExercisePhase,
   GuardrailState,
+  MissionAlert,
+  MissionBrief,
   ScreenId,
   SimulationState,
+  WorkflowStep,
   TrustState,
 } from '../types';
 import {
@@ -35,6 +38,7 @@ type Action =
   | { type: 'reset' }
   | { type: 'inject-attack' }
   | { type: 'select-detail'; detail?: SimulationState['selectedDetail'] }
+  | { type: 'clear-export' }
   | { type: 'export' };
 
 const attackOrder: AttackType[] = [
@@ -47,6 +51,18 @@ const attackOrder: AttackType[] = [
   'lineage-desync',
   'epoch-poisoning',
 ];
+
+const screenOrder: ScreenId[] = ['overview', 'live', 'attack', 'lineage', 'guardrails', 'analysis', 'evidence'];
+
+const screenMeta: Record<ScreenId, { label: string; detail: string }> = {
+  overview: { label: 'Overview', detail: 'Mission health, authority continuity, and trend summary.' },
+  live: { label: 'Live exercise', detail: 'Phase control, attack injection, and reactive telemetry.' },
+  attack: { label: 'Attack forge', detail: 'Composable adversary recipes and pressure shaping.' },
+  lineage: { label: 'Lineage inspection', detail: 'Epoch continuity, rejection, and recovery branches.' },
+  guardrails: { label: 'Guardrails', detail: 'Fail-secure mission rules and retained policy state.' },
+  analysis: { label: 'Protocol analysis', detail: 'Operational protocol comparison under mixed attack.' },
+  evidence: { label: 'Evidence export', detail: 'Package the scenario, outcomes, and audit trail.' },
+};
 
 function deriveTrustState(confidence: number, threat: number, phase: ExercisePhase): TrustState {
   if (phase === 'fail-secure') return 'fail-secure';
@@ -69,6 +85,111 @@ function deriveMode(trustState: TrustState): SimulationState['mode'] {
   if (trustState === 'recovery') return 'Recovery';
   if (trustState === 'contested' || trustState === 'degraded') return 'Contested';
   return 'Simulated';
+}
+
+function buildWorkflow(screen: ScreenId, trustState: TrustState): WorkflowStep[] {
+  const activeIndex = screenOrder.indexOf(screen);
+  return screenOrder.map((id, index) => {
+    const meta = screenMeta[id];
+    const status: WorkflowStep['status'] =
+      index < activeIndex ? 'complete' : index === activeIndex ? 'active' : 'queued';
+    return {
+      id,
+      label: meta.label,
+      detail:
+        id === 'guardrails' && trustState === 'fail-secure'
+          ? 'Mission rules are retained and the console is pinned to fail-secure policy.'
+          : meta.detail,
+      status,
+    };
+  });
+}
+
+function buildAlerts(state: SimulationState, threatPressure: number, trustState: TrustState): MissionAlert[] {
+  const activeAttackLabel =
+    state.attackTypes.length > 0
+      ? state.attackTypes
+          .slice(0, 2)
+          .map((attack) => attack.replace('-', ' '))
+          .join(' + ')
+      : 'no active attack primitives';
+  const pressureSeverity: MissionAlert['severity'] = threatPressure > 66 ? 'critical' : threatPressure > 34 ? 'warn' : 'info';
+  const continuitySeverity: MissionAlert['severity'] =
+    trustState === 'fail-secure' || state.attackTypes.includes('authority-overwrite') ? 'critical' : trustState === 'recovery' ? 'info' : 'warn';
+  const exportSeverity: MissionAlert['severity'] =
+    state.metrics.integrityContinuity > 80 && trustState !== 'fail-secure' ? 'info' : 'warn';
+
+  return [
+    {
+      id: 'pressure',
+      severity: pressureSeverity,
+      title: 'Spectrum pressure shift',
+      detail: `Threat pressure is now ${Math.round(threatPressure)} because ${activeAttackLabel} is being blended into the ${state.phase.replace('-', ' ')} phase.`,
+      driver: `${Math.max(1, state.attackTypes.length)} active vectors`,
+    },
+    {
+      id: 'lineage',
+      severity: continuitySeverity,
+      title: 'Lineage continuity posture',
+      detail:
+        trustState === 'fail-secure'
+          ? 'The console has pinned itself to the last verified lineage branch and rejected mutable authority.'
+          : state.attackTypes.includes('lineage-desync')
+            ? 'A lineage desync attempt is being contained by continuity checks and recovery branches.'
+            : 'Lineage remains synchronized, but authority is being watched closely as the scenario evolves.',
+      driver: `${state.metrics.lineageTick.toFixed(0)} lineage tick`,
+    },
+    {
+      id: 'evidence',
+      severity: exportSeverity,
+      title: 'Evidence posture',
+      detail:
+        state.phase === 'recovery'
+          ? 'Evidence export is stabilizing because the recovery branch is active and continuity is climbing.'
+          : 'Evidence export remains deterministic; the console can package the current scenario at any time without backend calls.',
+      driver: `${Math.round(state.metrics.integrityContinuity)}% integrity`,
+    },
+  ];
+}
+
+function buildBriefing(state: SimulationState, threatPressure: number, trustState: TrustState): MissionBrief[] {
+  const pressureDelta = Math.round(threatPressure - phasePressure(state.phase));
+  const evidenceReadiness = clamp(
+    state.metrics.integrityContinuity + (trustState === 'trusted' ? 8 : trustState === 'recovery' ? 4 : -6),
+    0,
+    99,
+  );
+  return [
+    {
+      label: 'Pressure delta',
+      value: `${pressureDelta >= 0 ? '+' : ''}${pressureDelta}`,
+      detail:
+        pressureDelta >= 0
+          ? 'Attack parameters are adding load above the phase baseline.'
+          : 'The exercise is easing back toward the phase baseline.',
+      tone: pressureDelta > 18 ? 'hostile' : pressureDelta > 6 ? 'amber' : 'trust',
+    },
+    {
+      label: 'Authority state',
+      value: trustState.replace('-', ' '),
+      detail:
+        trustState === 'trusted'
+          ? 'Authority continuity is intact and the operator path remains primary.'
+          : trustState === 'recovery'
+            ? 'The console is using the recovery branch while it revalidates trust.'
+            : 'Command authority is contested and the console is rejecting stale transitions.',
+      tone: trustState === 'trusted' ? 'trust' : trustState === 'recovery' ? 'amber' : 'hostile',
+    },
+    {
+      label: 'Evidence readiness',
+      value: `${Math.round(evidenceReadiness)}%`,
+      detail:
+        evidenceReadiness > 75
+          ? 'The current state is ready to export as a clean evidence bundle.'
+          : 'The evidence pack is still usable, but more signal can be gathered before export.',
+      tone: evidenceReadiness > 75 ? 'trust' : evidenceReadiness > 45 ? 'amber' : 'hostile',
+    },
+  ];
 }
 
 function nextPhase(phase: ExercisePhase): ExercisePhase {
@@ -184,6 +305,9 @@ function recompute(state: SimulationState, seed = 77): SimulationState {
 
   const scenario = scenarioForEnvironment(state.environment);
   const series = buildTimeSeries(seed + state.timeElapsed, threatPressure + state.attackIntensity * 0.34, state.phase);
+  const workflow = buildWorkflow(state.screen, trustState);
+  const alerts = buildAlerts(state, threatPressure, trustState);
+  const briefing = buildBriefing(state, threatPressure, trustState);
   const headline =
     trustState === 'fail-secure'
       ? 'Fail-secure engaged'
@@ -207,12 +331,16 @@ function recompute(state: SimulationState, seed = 77): SimulationState {
     guardrails: buildGuardrails(),
     series,
     headline,
+    workflow,
+    alerts,
+    briefing,
   };
 }
 
 function initialState(): SimulationState {
   const scenario = scenarioForEnvironment('ground-air');
   const base: SimulationState = {
+    screen: 'overview',
     scenario,
     phase: 'nominal',
     environment: 'ground-air',
@@ -245,6 +373,9 @@ function initialState(): SimulationState {
     guardrails: buildGuardrails(),
     series: buildTimeSeries(77, 12, 'nominal'),
     headline: 'Trusted authority maintained',
+    workflow: [],
+    alerts: [],
+    briefing: [],
     exportStatus: 'idle',
   };
   return recompute(base, 77);
@@ -253,7 +384,7 @@ function initialState(): SimulationState {
 function reducer(state: SimulationState, action: Action): SimulationState {
   switch (action.type) {
     case 'set-screen':
-      return state;
+      return recompute({ ...state, screen: action.screen }, 191 + action.screen.length);
     case 'set-environment':
       return recompute({
         ...state,
@@ -303,6 +434,8 @@ function reducer(state: SimulationState, action: Action): SimulationState {
             const { selectedDetail, ...rest } = state;
             return rest as SimulationState;
           })();
+    case 'clear-export':
+      return { ...state, exportStatus: 'idle' };
     case 'export':
       return { ...state, exportStatus: 'success' };
     default:
@@ -321,7 +454,7 @@ export function useAnvilSimulation() {
 
   useEffect(() => {
     if (state.exportStatus !== 'success') return;
-    const timer = window.setTimeout(() => dispatch({ type: 'select-detail', detail: state.selectedDetail }), 1100);
+    const timer = window.setTimeout(() => dispatch({ type: 'clear-export' }), 1100);
     return () => window.clearTimeout(timer);
   }, [state.exportStatus, state.selectedDetail]);
 

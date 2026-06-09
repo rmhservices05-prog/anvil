@@ -98,6 +98,28 @@ export interface TrustMetrics {
   lineageTick: number;
 }
 
+export interface WorkflowStep {
+  id: ScreenId;
+  label: string;
+  detail: string;
+  status: 'complete' | 'active' | 'queued';
+}
+
+export interface MissionAlert {
+  id: string;
+  severity: 'info' | 'warn' | 'critical';
+  title: string;
+  detail: string;
+  driver: string;
+}
+
+export interface MissionBrief {
+  label: string;
+  value: string;
+  detail: string;
+  tone: 'trust' | 'amber' | 'hostile';
+}
+
 export interface ProtocolMetric {
   protocol: ProtocolName;
   survivesCorruption: number;
@@ -140,6 +162,7 @@ export interface GuardrailItem {
 }
 
 export interface SimulationState {
+  screen: ScreenId;
   scenario: Scenario;
   phase: ExercisePhase;
   environment: EnvironmentId;
@@ -164,6 +187,9 @@ export interface SimulationState {
   guardrails: GuardrailItem[];
   series: TimeSeriesPoint[];
   headline: string;
+  workflow: WorkflowStep[];
+  alerts: MissionAlert[];
+  briefing: MissionBrief[];
   selectedDetail?: {
     type: 'node' | 'event' | 'branch';
     id: string;

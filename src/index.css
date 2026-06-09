@@ -23,8 +23,10 @@ body,
 body {
   margin: 0;
   background:
+    radial-gradient(circle at 18% 14%, rgba(31, 95, 209, 0.08), transparent 24%),
+    radial-gradient(circle at 82% 18%, rgba(215, 168, 75, 0.06), transparent 20%),
     linear-gradient(180deg, rgba(255, 255, 255, 0.015), transparent 16%),
-    linear-gradient(180deg, #0b0b0b 0%, #0d0d0d 44%, #0a0a0a 100%);
+    linear-gradient(180deg, #090909 0%, #0d0d0d 44%, #070707 100%);
   color: #d6d6d6;
 }
 
@@ -39,7 +41,7 @@ body {
     linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
   background-size: 48px 48px;
   background-position: 0 0;
-  background-color: #0b0b0b;
+  background-color: #070707;
 }
 
 .thin-scrollbar::-webkit-scrollbar {

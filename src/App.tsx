@@ -1,78 +1,37 @@
 import {
-  Activity,
   Clock3,
   Lock,
   Menu,
   Pause,
   Play,
   RotateCcw,
-  Search,
   ShieldAlert,
 } from 'lucide-react';
 import type { ReactNode } from 'react';
-import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { useAnvilSimulation } from './hooks/useAnvilSimulation';
 import { Badge, Button, Card } from './components/ui';
-import { ScenarioCanvas } from './components/ScenarioCanvas';
-import { ThreatGauge } from './components/ThreatGauge';
-import { TrustStrip } from './components/TrustStrip';
-import { AttackLog } from './components/AttackLog';
-import { MetricCard } from './components/MetricCard';
 import { cn } from './lib/utils';
 import { formatPercent, formatSeconds } from './lib/seed';
+import { OverviewScreen } from './features/overview/OverviewScreen';
+import { LiveExerciseScreen } from './features/live-exercise/LiveExerciseScreen';
+import { AttackForgeScreen } from './features/attack-forge/AttackForgeScreen';
+import { LineageScreen } from './features/lineage/LineageScreen';
+import { GuardrailsScreen } from './features/guardrails/GuardrailsScreen';
+import { ProtocolAnalysisScreen } from './features/protocol-analysis/ProtocolAnalysisScreen';
+import { EvidencePackScreen } from './features/evidence-pack/EvidencePackScreen';
+import type { SimulationState } from './types';
 
 export default function App() {
   const { state, dispatch } = useAnvilSimulation();
 
-  const metricCards = [
-    {
-      label: 'Threat pressure',
-      value: `${Math.round(state.threatPressure)}`,
-      subvalue: 'Current pressure index',
-      tone: 'hostile' as const,
-      progress: state.threatPressure,
-    },
-    {
-      label: 'Confidence',
-      value: formatPercent(state.confidence),
-      subvalue: state.trustState.replace('-', ' '),
-      tone: 'trust' as const,
-      progress: state.confidence,
-    },
-    {
-      label: 'Verified command rate',
-      value: formatPercent(state.metrics.verifiedCommandRate),
-      subvalue: 'Accepted authority path',
-      tone: 'trust' as const,
-      progress: state.metrics.verifiedCommandRate,
-    },
-    {
-      label: 'Rejected hostile attempts',
-      value: `${Math.round(state.metrics.rejectedHostileAttempts)}`,
-      subvalue: 'Suppressed inputs',
-      tone: 'amber' as const,
-      progress: state.metrics.rejectedHostileAttempts,
-    },
-    {
-      label: 'Integrity continuity',
-      value: formatPercent(state.metrics.integrityContinuity),
-      subvalue: state.metrics.guardrailLock,
-      tone: 'trust' as const,
-      progress: state.metrics.integrityContinuity,
-    },
-    {
-      label: 'Elapsed / mode',
-      value: formatSeconds(state.timeElapsed),
-      subvalue: state.mode,
-      tone: 'amber' as const,
-      progress: Math.min(100, (state.timeElapsed % 300) / 3),
-    },
-  ];
+  const screenContent = renderScreenContent(state, dispatch);
+  const focusedArtifact = getFocusedArtifact(state);
+  const activeStep = state.workflow.find((step) => step.status === 'active') ?? state.workflow[0];
 
   return (
-    <div className="app-shell min-h-screen bg-[#0b0b0b] text-[#d6d6d6]">
-      <div className="grid min-h-screen grid-cols-1 lg:grid-cols-[248px_minmax(0,1fr)]">
-        <aside className="flex min-h-screen flex-col border-r border-white/[0.07] bg-[#090909]">
+    <div className="app-shell min-h-screen bg-[#070707] text-[#d6d6d6]">
+      <div className="grid min-h-screen grid-cols-1 lg:grid-cols-[300px_minmax(0,1fr)]">
+        <aside className="flex flex-col border-b border-white/[0.07] bg-[#090909] lg:sticky lg:top-0 lg:h-screen lg:border-b-0 lg:border-r">
           <div className="flex items-center justify-between border-b border-white/[0.06] px-4 py-4">
             <div className="flex items-center gap-3">
               <div className="grid h-8 w-8 place-items-center border border-white/[0.12] bg-[#101010]">
@@ -80,38 +39,94 @@ export default function App() {
               </div>
               <div>
                 <div className="text-[13px] font-semibold tracking-normal text-[#f3f3f3]">ANVIL</div>
-                <div className="text-[10px] uppercase tracking-[0.16em] text-[#626262]">Console</div>
+                <div className="text-[10px] uppercase tracking-[0.16em] text-[#626262]">Ground / Air console</div>
               </div>
             </div>
             <Menu size={16} className="text-[#7a7a7a]" />
           </div>
 
-          <div className="thin-scrollbar flex-1 space-y-5 overflow-y-auto px-4 py-4">
-            <div>
-              <div className="micro-label mb-2">General</div>
-              <div className="border border-white/[0.07] bg-[#151515] px-3 py-2">
-                <div className="flex items-center gap-2 text-[12px] text-[#f3f3f3]">
-                  <div className="h-2 w-2 bg-[#5e5e5e]" />
-                  Ground / Air Overview
+          <div className="thin-scrollbar flex-1 min-h-0 overflow-y-auto px-4 py-4">
+            <div className="flex flex-col gap-5">
+            <Card className="space-y-4 bg-[#101010]">
+              <div className="flex items-start justify-between gap-3 border-b border-white/[0.06] pb-3">
+                <div>
+                  <div className="micro-label">Mission frame</div>
+                  <div className="mt-1 text-[13px] font-medium text-[#f3f3f3]">{state.scenario.title}</div>
+                  <div className="mt-1 text-[11px] leading-5 text-[#8c8c8c]">{state.scenario.subtitle}</div>
                 </div>
+                <Badge tone={state.mode === 'Fail-secure' ? 'danger' : state.mode === 'Recovery' ? 'amber' : state.mode === 'Contested' ? 'warn' : 'success'}>
+                  {state.mode}
+                </Badge>
               </div>
-            </div>
+              <div className="grid grid-cols-2 gap-2">
+                <MetricPill label="Threat" value={`${Math.round(state.threatPressure)}`} tone={state.threatPressure > 60 ? 'hostile' : state.threatPressure > 32 ? 'amber' : 'trust'} />
+                <MetricPill label="Confidence" value={formatPercent(state.confidence)} tone={state.confidence > 74 ? 'trust' : state.confidence > 48 ? 'amber' : 'hostile'} />
+                <MetricPill label="Elapsed" value={formatSeconds(state.timeElapsed)} tone="trust" />
+                <MetricPill label="Alerts" value={`${state.alerts.length}`} tone={state.alerts.some((item) => item.severity === 'critical') ? 'hostile' : 'amber'} />
+              </div>
+            </Card>
 
-            <SidebarGroup title="Demo scope">
-              <SidebarLine label="Environment" value="Ground / Air" />
-              <SidebarLine label="Constraint" value="Single-line command authority validation" />
-              <SidebarLine label="Coverage" value="Other environments hidden" />
-            </SidebarGroup>
+            <section className="space-y-2">
+              <div className="micro-label">Mission flow</div>
+              <div className="space-y-1">
+                {state.workflow.map((step, index) => (
+                  <button
+                    key={step.id}
+                    onClick={() => dispatch({ type: 'set-screen', screen: step.id })}
+                    className={cn(
+                      'w-full border px-3 py-3 text-left transition',
+                      step.status === 'active'
+                        ? 'border-amber-500/30 bg-amber-500/10 text-[#f3f3f3]'
+                        : step.status === 'complete'
+                          ? 'border-white/[0.08] bg-[#131313] text-[#d6d6d6] hover:bg-[#161616]'
+                          : 'border-white/[0.06] bg-[#101010] text-[#8c8c8c] hover:bg-[#151515]',
+                    )}
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <div className="text-[12px] font-medium">
+                          <span className="mr-2 text-[10px] uppercase tracking-[0.16em] text-[#6f6f6f]">
+                            0{index + 1}
+                          </span>
+                          {step.label}
+                        </div>
+                        <div className="mt-1 text-[11px] leading-4 text-[#8c8c8c]">{step.detail}</div>
+                      </div>
+                      <Badge
+                        tone={
+                          step.status === 'active'
+                            ? 'amber'
+                            : step.status === 'complete'
+                              ? 'success'
+                              : 'muted'
+                        }
+                      >
+                        {step.status}
+                      </Badge>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </section>
 
-            <SidebarGroup title="Runtime">
-              <SidebarLine label="Threat pressure" value={`${Math.round(state.threatPressure)}`} tone={toneForThreat(state.threatPressure)} />
-              <SidebarLine label="Authority" value={state.trustState} tone={toneForTrust(state.trustState)} />
-              <SidebarLine label="Mode" value={state.mode} tone={toneForMode(state.mode)} />
-              <SidebarLine label="Elapsed" value={formatSeconds(state.timeElapsed)} />
-              <SidebarLine label="Confidence" value={formatPercent(state.confidence)} tone={toneForConfidence(state.confidence)} />
-            </SidebarGroup>
+            <section className="space-y-2">
+              <div className="micro-label">Mission alerts</div>
+              <div className="space-y-2">
+                {state.alerts.map((alert) => (
+                  <Card key={alert.id} className="space-y-2 bg-[#111111] p-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <Badge tone={alert.severity === 'critical' ? 'danger' : alert.severity === 'warn' ? 'warn' : 'success'}>{alert.severity}</Badge>
+                      <span className="text-[10px] uppercase tracking-[0.16em] text-[#626262]">{alert.driver}</span>
+                    </div>
+                    <div className="text-[12px] font-medium text-[#f3f3f3]">{alert.title}</div>
+                    <div className="text-[11px] leading-5 text-[#8c8c8c]">{alert.detail}</div>
+                  </Card>
+                ))}
+              </div>
+            </section>
 
-            <SidebarGroup title="Controls">
+            <section className="space-y-2">
+              <div className="micro-label">Controls</div>
               <div className="grid gap-2">
                 <Button
                   variant="default"
@@ -125,40 +140,71 @@ export default function App() {
                   <RotateCcw size={15} />
                   Reset
                 </Button>
-                <Button variant="danger" onClick={() => dispatch({ type: 'inject-attack' })} className="w-full justify-start">
+                <Button
+                  variant="danger"
+                  onClick={() => {
+                    dispatch({ type: 'set-screen', screen: 'live' });
+                    dispatch({ type: 'inject-attack' });
+                    dispatch({ type: 'run' });
+                  }}
+                  className="w-full justify-start"
+                >
                   <ShieldAlert size={15} />
                   Inject Attack
                 </Button>
               </div>
-            </SidebarGroup>
+            </section>
+
+            <section className="space-y-2">
+              <div className="micro-label">Current focus</div>
+              <Card className="space-y-2 bg-[#101010] p-3">
+                {focusedArtifact ? (
+                  <>
+                    <div className="text-[12px] font-medium text-[#f3f3f3]">{focusedArtifact.title}</div>
+                    <div className="text-[11px] leading-5 text-[#8c8c8c]">{focusedArtifact.detail}</div>
+                  </>
+                ) : (
+                  <div className="text-[11px] leading-5 text-[#8c8c8c]">
+                    No focus selected. Click a node, event, or branch to inspect it here.
+                  </div>
+                )}
+              </Card>
+            </section>
           </div>
 
           <div className="border-t border-white/[0.07] px-4 py-3">
             <div className="flex items-center justify-between text-[10px] uppercase tracking-[0.16em] text-[#626262]">
               <span>Runtime</span>
-              <span>Ground / Air</span>
+              <span>{state.metrics.lastVerifiedEpoch}</span>
             </div>
             <div className="mt-2 flex items-center gap-2 text-[11px] text-[#8c8c8c]">
               <Lock size={12} />
-              Ground / Air only demo
+              {state.metrics.guardrailLock} guardrails, deterministic local simulation
             </div>
+          </div>
           </div>
         </aside>
 
         <main className="min-w-0 bg-[#101010]">
-          <header className="sticky top-0 z-20 border-b border-white/[0.07] bg-[#111111]">
-            <div className="flex flex-col gap-3 px-4 py-4">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 min-w-0 flex-1 items-center gap-3 border border-white/[0.07] bg-[#0f0f0f] px-3 text-[12px] text-[#6f6f6f]">
-                  <Search size={15} className="shrink-0 text-[#7d7d7d]" />
-                  <span className="truncate">SEARCH...</span>
-                  <span className="ml-auto text-[10px] uppercase tracking-[0.16em] text-[#545454]">⌘K</span>
+          <header className="sticky top-0 z-20 border-b border-white/[0.07] bg-[#111111]/95 backdrop-blur">
+            <div className="space-y-4 px-4 py-4 lg:px-5">
+              <div className="flex flex-wrap items-start gap-3">
+                <div className="min-w-0 flex-1">
+                  <div className="micro-label">Active screen</div>
+                  <div className="mt-1 text-[15px] font-semibold tracking-tight text-[#f3f3f3]">
+                    {activeStep?.label ?? 'ANVIL'}
+                  </div>
+                  <div className="mt-1 max-w-3xl text-[12px] leading-5 text-[#8c8c8c]">
+                    {activeStep?.detail ?? 'Mission console shell'}
+                  </div>
                 </div>
-                <div className="hidden items-center gap-2 xl:flex">
+                <div className="flex flex-wrap items-center gap-2">
                   <Badge tone={state.confidence > 74 ? 'success' : state.confidence > 48 ? 'warn' : 'danger'}>
                     Confidence {Math.round(state.confidence)}%
                   </Badge>
-                  <Badge tone={state.mode === 'Recovery' ? 'amber' : state.mode === 'Simulated' ? 'success' : 'danger'}>{state.mode}</Badge>
+                  <Badge tone={state.mode === 'Fail-secure' ? 'danger' : state.mode === 'Recovery' ? 'amber' : state.mode === 'Contested' ? 'warn' : 'success'}>
+                    {state.mode}
+                  </Badge>
                   <Badge tone="muted" className="inline-flex items-center gap-2">
                     <Clock3 size={12} />
                     {formatSeconds(state.timeElapsed)}
@@ -166,97 +212,71 @@ export default function App() {
                 </div>
               </div>
 
-              <div className="flex flex-wrap items-center gap-2">
-                {state.scenario.tags.map((tag, index) => (
-                  <div
-                    key={tag}
+              <div className="flex flex-wrap gap-2">
+                {state.workflow.map((step) => (
+                  <button
+                    key={step.id}
+                    onClick={() => dispatch({ type: 'set-screen', screen: step.id })}
                     className={cn(
-                      'border px-3 py-2 text-[11px] uppercase tracking-[0.12em]',
-                      index === 0 ? 'border-white/[0.08] bg-[#1a1a1a] text-[#f3f3f3]' : 'border-white/[0.06] bg-[#101010] text-[#8c8c8c]',
+                      'border px-3 py-2 text-[11px] uppercase tracking-[0.12em] transition',
+                      step.status === 'active'
+                        ? 'border-amber-500/30 bg-amber-500/10 text-[#f3f3f3]'
+                        : step.status === 'complete'
+                          ? 'border-white/[0.07] bg-[#151515] text-[#d6d6d6] hover:bg-[#191919]'
+                          : 'border-white/[0.05] bg-[#101010] text-[#8c8c8c] hover:bg-[#151515]',
                     )}
                   >
-                    {tag}
-                  </div>
+                    {step.label}
+                  </button>
                 ))}
-                <div className="ml-auto text-[11px] text-[#8c8c8c]">{state.scenario.doctrine}</div>
               </div>
             </div>
           </header>
 
-          <div className="space-y-4 p-4">
-            <div className="flex items-end justify-between gap-4 border-b border-white/[0.06] pb-3">
-              <div>
-                <div className="micro-label">Scenario</div>
-                <div className="text-[14px] font-medium text-[#f3f3f3]">{state.scenario.title}</div>
-              </div>
-              <div className="text-right text-[11px] text-[#8c8c8c]">{state.scenario.subtitle}</div>
-            </div>
-
-            <section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
-              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                {metricCards.map((metric) => (
-                  <MetricCard
-                    key={metric.label}
-                    label={metric.label}
-                    value={metric.value}
-                    subvalue={metric.subvalue}
-                    tone={metric.tone}
-                    progress={metric.progress}
-                  />
-                ))}
-              </div>
-
-              <Card className="space-y-4">
-                <div className="flex items-start justify-between gap-4 border-b border-white/[0.06] pb-3">
+          <div className="space-y-5 p-4 lg:p-5">
+            <section className="grid gap-3 xl:grid-cols-[1.25fr_0.75fr]">
+              <Card className="space-y-4 bg-[#111111]">
+                <div className="flex items-center justify-between gap-3 border-b border-white/[0.06] pb-3">
                   <div>
-                    <div className="micro-label">Threat panel</div>
-                    <div className="text-[13px] font-medium text-[#f3f3f3]">Pressure and recovery trend</div>
+                    <div className="micro-label">What changed</div>
+                    <div className="text-[13px] font-medium text-[#f3f3f3]">Derived from the current phase, attack mix, and trust posture</div>
                   </div>
-                  <Badge tone={state.threatPressure > 60 ? 'danger' : state.threatPressure > 32 ? 'warn' : 'success'}>
-                    {state.threatPressure > 60 ? 'High' : state.threatPressure > 32 ? 'Moderate' : 'Low'}
+                  <Badge tone={state.alerts.some((alert) => alert.severity === 'critical') ? 'danger' : 'amber'}>
+                    {state.alerts.some((alert) => alert.severity === 'critical') ? 'Critical watch' : 'Monitoring'}
                   </Badge>
                 </div>
-                <ThreatGauge value={state.threatPressure} />
-                <div className="border border-white/[0.06] bg-[#121212] p-3">
-                  <div className="mb-3 flex items-center justify-between">
-                    <div className="micro-label">Series view</div>
-                    <div className="inline-flex items-center gap-2 text-[11px] text-[#8c8c8c]">
-                      <Activity size={12} />
-                      Live trend
+                <div className="grid gap-3 md:grid-cols-3">
+                  {state.briefing.map((item) => (
+                    <div key={item.label} className="border border-white/[0.07] bg-[#151515] p-3">
+                      <div className="micro-label">{item.label}</div>
+                      <div className="mt-2 flex items-baseline justify-between gap-2">
+                        <div className="font-mono text-[20px] leading-none text-[#f3f3f3]">{item.value}</div>
+                        <Badge tone={item.tone === 'trust' ? 'success' : item.tone === 'amber' ? 'warn' : 'danger'}>{item.tone}</Badge>
+                      </div>
+                      <div className="mt-2 text-[11px] leading-5 text-[#8c8c8c]">{item.detail}</div>
                     </div>
+                  ))}
+                </div>
+              </Card>
+
+              <Card className="space-y-4 bg-[#111111]">
+                <div className="flex items-center justify-between gap-3 border-b border-white/[0.06] pb-3">
+                  <div>
+                    <div className="micro-label">Focus</div>
+                    <div className="text-[13px] font-medium text-[#f3f3f3]">Operator selection and runtime state</div>
                   </div>
-                  <div className="h-[160px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={state.series} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
-                        <CartesianGrid stroke="rgba(255,255,255,0.05)" vertical={false} />
-                        <XAxis dataKey="tick" hide />
-                        <YAxis hide domain={[0, 100]} />
-                        <Tooltip
-                          contentStyle={{
-                            background: '#111111',
-                            border: '1px solid rgba(255,255,255,0.08)',
-                            borderRadius: 4,
-                            color: '#f3f3f3',
-                            boxShadow: 'none',
-                          }}
-                          labelStyle={{ color: '#8c8c8c' }}
-                        />
-                        <Line type="monotone" dataKey="jamming" stroke="#d95c59" strokeWidth={1.5} dot={false} />
-                        <Line type="monotone" dataKey="spoof" stroke="#d7a84b" strokeWidth={1.5} dot={false} />
-                        <Line type="monotone" dataKey="recovery" stroke="#36b37e" strokeWidth={1.5} dot={false} />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </div>
+                  <Badge tone={state.selectedDetail ? 'success' : 'muted'}>{state.selectedDetail ? 'selected' : 'idle'}</Badge>
+                </div>
+                <div className="space-y-3">
+                  <FocusRow label="Scenario" value={state.scenario.title} />
+                  <FocusRow label="Environment" value={state.environment.replace('-', ' / ')} />
+                  <FocusRow label="Current epoch" value={state.metrics.lastVerifiedEpoch} />
+                  <FocusRow label="Workflow stage" value={activeStep?.label ?? 'Unknown'} />
                 </div>
               </Card>
             </section>
 
-            <ScenarioCanvas nodes={state.nodes} links={state.links} onSelectNode={() => undefined} />
-
-            <section className="grid gap-4 xl:grid-cols-[0.92fr_1.08fr]">
-              <TrustStrip metrics={state.metrics} />
-              <AttackLog events={state.attackEvents.slice(0, 12)} />
-            </section>
+            {screenContent}
           </div>
         </main>
       </div>
@@ -264,61 +284,108 @@ export default function App() {
   );
 }
 
-function SidebarGroup({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <section className="space-y-2">
-      <div className="micro-label">{title}</div>
-      <div className="space-y-1">{children}</div>
-    </section>
-  );
+function renderScreenContent(
+  state: SimulationState,
+  dispatch: ReturnType<typeof useAnvilSimulation>['dispatch'],
+) {
+  switch (state.screen) {
+    case 'overview':
+      return <OverviewScreen state={state} onSelectEvent={(id) => dispatch({ type: 'select-detail', detail: { type: 'event', id } })} />;
+    case 'live':
+      return (
+        <LiveExerciseScreen
+          state={state}
+          onToggleAttack={(attack) => dispatch({ type: 'toggle-attack', attack })}
+          onChangeAttackParam={(key, value) => dispatch({ type: 'set-attack-param', key, value })}
+          onChangePhase={(phase) => dispatch({ type: 'set-phase', phase })}
+          onSelectNode={(node) => dispatch({ type: 'select-detail', detail: { type: 'node', id: node.id } })}
+          onLaunch={() => {
+            dispatch({ type: 'run' });
+            dispatch({ type: 'inject-attack' });
+          }}
+        />
+      );
+    case 'attack':
+      return <AttackForgeScreen state={state} />;
+    case 'lineage':
+      return (
+        <LineageScreen
+          state={state}
+          onSelect={(branch) => dispatch({ type: 'select-detail', detail: { type: 'branch', id: branch.id } })}
+        />
+      );
+    case 'guardrails':
+      return <GuardrailsScreen state={state} />;
+    case 'analysis':
+      return <ProtocolAnalysisScreen state={state} />;
+    case 'evidence':
+      return <EvidencePackScreen state={state} onExport={() => dispatch({ type: 'export' })} />;
+    default:
+      return <OverviewScreen state={state} onSelectEvent={(id) => dispatch({ type: 'select-detail', detail: { type: 'event', id } })} />;
+  }
 }
 
-function SidebarLine({
+function getFocusedArtifact(state: SimulationState) {
+  const detail = state.selectedDetail;
+  if (!detail) {
+    return null;
+  }
+
+  if (detail.type === 'node') {
+    const node = state.nodes.find((item) => item.id === detail.id);
+    if (!node) return { title: 'Selected node', detail: 'Node not found in the current scenario snapshot.' };
+    return {
+      title: node.label,
+      detail: `${node.role} node at ${node.trust}% trust with ${node.lineageState.replace('-', ' ')} lineage.`,
+    };
+  }
+
+  if (detail.type === 'event') {
+    const event = state.attackEvents.find((item) => item.id === detail.id);
+    if (!event) return { title: 'Selected event', detail: 'Event not found in the current timeline snapshot.' };
+    return {
+      title: `${event.time} · ${event.source}`,
+      detail: `${event.message} Impact ${event.trustImpact > 0 ? '+' : ''}${event.trustImpact}.`,
+    };
+  }
+
+  const branch = state.lineageBranches.find((item) => item.id === detail.id);
+  if (!branch) return { title: 'Selected branch', detail: 'Branch not found in the current lineage snapshot.' };
+  return {
+    title: branch.epoch,
+    detail: `${branch.status} branch with ${branch.trust}% trust and successor state "${branch.successorState}".`,
+  };
+}
+
+function MetricPill({
   label,
   value,
-  tone = 'muted',
+  tone,
 }: {
   label: string;
   value: string;
-  tone?: SidebarTone;
+  tone: 'trust' | 'amber' | 'hostile';
 }) {
-  const toneClass =
-    tone === 'success'
-      ? 'text-[#72c8a0]'
-      : tone === 'warn'
-        ? 'text-[#e0b466]'
-        : tone === 'danger'
-          ? 'text-[#e28a86]'
-          : 'text-[#d6d6d6]';
-
   return (
-    <div className="flex items-center justify-between gap-3 border border-white/[0.06] bg-[#151515] px-3 py-2 text-[12px]">
-      <span className="text-[#8c8c8c]">{label}</span>
-      <span className={cn('truncate text-right', toneClass)}>{value}</span>
+    <div className="border border-white/[0.07] bg-[#151515] px-3 py-2">
+      <div className="text-[10px] uppercase tracking-[0.16em] text-[#8c8c8c]">{label}</div>
+      <div
+        className={cn(
+          'mt-2 font-mono text-[16px] leading-none',
+          tone === 'trust' ? 'text-[#72c8a0]' : tone === 'amber' ? 'text-[#e0b466]' : 'text-[#e28a86]',
+        )}
+      >
+        {value}
+      </div>
     </div>
   );
 }
 
-type SidebarTone = 'muted' | 'success' | 'warn' | 'danger';
-
-function toneForThreat(value: number): SidebarTone {
-  return value > 60 ? 'danger' : value > 32 ? 'warn' : 'success';
-}
-
-function toneForConfidence(value: number): SidebarTone {
-  return value > 74 ? 'success' : value > 48 ? 'warn' : 'danger';
-}
-
-function toneForTrust(value: string): SidebarTone {
-  if (value === 'trusted') return 'success';
-  if (value === 'degraded') return 'warn';
-  if (value === 'contested' || value === 'fail-secure') return 'danger';
-  return 'muted';
-}
-
-function toneForMode(value: string): SidebarTone {
-  if (value === 'Simulated') return 'success';
-  if (value === 'Recovery') return 'warn';
-  if (value === 'Contested') return 'danger';
-  return 'danger';
+function FocusRow({ label, value }: { label: string; value: ReactNode }) {
+  return (
+    <div className="flex items-start justify-between gap-4 border border-white/[0.06] bg-[#151515] px-3 py-2">
+      <span className="text-[11px] uppercase tracking-[0.16em] text-[#8c8c8c]">{label}</span>
+      <span className="max-w-[70%] text-right text-[12px] leading-5 text-[#f3f3f3]">{value}</span>
+    </div>
+  );
 }
