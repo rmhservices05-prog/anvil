@@ -36,6 +36,12 @@ export default function App() {
   const activeStep = state.workflow.find((step) => step.status === 'active') ?? state.workflow[0];
   const selectedDetail = state.selectedDetail ?? state.layout.selectedDetail;
   const selectedArtifact = useMemo(() => getFocusedArtifact(state, selectedDetail), [state, selectedDetail]);
+  const overviewFocusSummary = {
+    scenario: state.scenario.title,
+    environment: state.environment.replace('-', ' / '),
+    epoch: state.metrics.lastVerifiedEpoch,
+    workflow: activeStep?.label ?? 'Unknown',
+  };
 
   useEffect(() => {
     if (!pendingExportDownload.current || state.exportStatus !== 'success' || !state.exportPayload) return;
@@ -61,7 +67,7 @@ export default function App() {
     });
   };
 
-  const screenContent = renderScreenContent(state, dispatch, requestExport);
+  const screenContent = renderScreenContent(state, dispatch, requestExport, overviewFocusSummary);
 
   return (
     <div className="app-shell min-h-screen bg-[#070707] text-[#d6d6d6]">
@@ -131,79 +137,6 @@ export default function App() {
                 <section className="space-y-2">
                   <div className="flex items-center gap-2">
                     <span className="inline-flex h-7 w-7 items-center justify-center rounded-[4px] border border-[#2358ca]/35 bg-[#102247] text-[#4f8cff]">
-                      <Workflow size={13} strokeWidth={2.2} className="text-[#4f8cff]" />
-                    </span>
-                    <div className="micro-label">Mission flow</div>
-                  </div>
-                  <div className="space-y-1">
-                    {state.workflow.map((step, index) => (
-                      <button
-                        key={step.id}
-                        onClick={() => dispatch({ type: 'set-screen', screen: step.id })}
-                        className={cn(
-                          'w-full border px-3 py-3 text-left transition',
-                          step.status === 'active'
-                            ? 'border-amber-500/30 bg-amber-500/10 text-[#f3f3f3]'
-                            : step.status === 'complete'
-                              ? 'border-white/[0.08] bg-[#131313] text-[#d6d6d6] hover:bg-[#161616]'
-                              : 'border-white/[0.06] bg-[#101010] text-[#8c8c8c] hover:bg-[#151515]',
-                        )}
-                      >
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="min-w-0">
-                            <div className="text-[12px] font-medium">
-                              <span className="mr-2 text-[10px] uppercase tracking-[0.16em] text-[#6f6f6f]">0{index + 1}</span>
-                              {step.label}
-                            </div>
-                            <div className="mt-1 text-[11px] leading-4 text-[#8c8c8c]">{step.detail}</div>
-                          </div>
-                          <Badge
-                            tone={
-                              step.status === 'active'
-                                ? 'amber'
-                                : step.status === 'complete'
-                                  ? 'success'
-                                  : 'muted'
-                            }
-                          >
-                            {step.status}
-                          </Badge>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </section>
-
-                <section className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <span className="inline-flex h-7 w-7 items-center justify-center rounded-[4px] border border-[#2358ca]/35 bg-[#102247] text-[#4f8cff]">
-                      <ShieldAlert size={13} strokeWidth={2.2} className="text-[#4f8cff]" />
-                    </span>
-                    <div className="micro-label">Mission alerts</div>
-                  </div>
-                  <div className="space-y-2">
-                    {state.consoleAlerts.map((alert) => (
-                      <Card key={alert.id} className="space-y-2 bg-[#111111] p-3">
-                        <div className="flex items-center justify-between gap-3">
-                          <Badge tone={alert.level === 'critical' ? 'danger' : alert.level === 'warn' ? 'warn' : 'success'}>{alert.level}</Badge>
-                          <Button
-                            variant="ghost"
-                            onClick={() => dispatch({ type: 'acknowledge-alert', id: alert.id })}
-                            disabled={alert.acknowledged}
-                          >
-                            {alert.acknowledged ? 'Acknowledged' : 'Acknowledge'}
-                          </Button>
-                        </div>
-                        <div className="text-[12px] font-medium text-[#f3f3f3]">{alert.title}</div>
-                        <div className="text-[11px] leading-5 text-[#8c8c8c]">{alert.message}</div>
-                      </Card>
-                    ))}
-                  </div>
-                </section>
-
-                <section className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <span className="inline-flex h-7 w-7 items-center justify-center rounded-[4px] border border-[#2358ca]/35 bg-[#102247] text-[#4f8cff]">
                       <Activity size={13} strokeWidth={2.2} className="text-[#4f8cff]" />
                     </span>
                     <div className="micro-label">Session lifecycle</div>
@@ -247,23 +180,43 @@ export default function App() {
                 <section className="space-y-2">
                   <div className="flex items-center gap-2">
                     <span className="inline-flex h-7 w-7 items-center justify-center rounded-[4px] border border-[#2358ca]/35 bg-[#102247] text-[#4f8cff]">
-                      <Eye size={13} strokeWidth={2.2} className="text-[#4f8cff]" />
+                      <Workflow size={13} strokeWidth={2.2} className="text-[#4f8cff]" />
                     </span>
-                    <div className="micro-label">Current focus</div>
+                    <div className="micro-label">Screens</div>
                   </div>
-                  <Card className="space-y-2 bg-[#101010] p-3">
-                    {selectedArtifact ? (
-                      <>
-                        <div className="text-[12px] font-medium text-[#f3f3f3]">{selectedArtifact.title}</div>
-                        <div className="text-[11px] leading-5 text-[#8c8c8c]">{selectedArtifact.detail}</div>
-                      </>
-                    ) : (
-                      <div className="text-[11px] leading-5 text-[#8c8c8c]">
-                        No focus selected. Click a node, event, branch, or evidence row to inspect it here.
-                      </div>
-                    )}
-                  </Card>
+                  <div className="space-y-1">
+                    {state.workflow.map((step) => (
+                      <button
+                        key={step.id}
+                        onClick={() => dispatch({ type: 'set-screen', screen: step.id })}
+                        className={cn(
+                          'flex w-full items-center justify-between gap-3 border px-3 py-2 text-left transition',
+                          step.status === 'active'
+                            ? 'border-amber-500/30 bg-amber-500/10 text-[#f3f3f3]'
+                            : step.status === 'complete'
+                              ? 'border-white/[0.08] bg-[#131313] text-[#d6d6d6] hover:bg-[#161616]'
+                              : 'border-white/[0.06] bg-[#101010] text-[#8c8c8c] hover:bg-[#151515]',
+                        )}
+                      >
+                        <div className="min-w-0">
+                          <div className="text-[12px] font-medium">{step.label}</div>
+                        </div>
+                        <Badge
+                          tone={
+                            step.status === 'active'
+                              ? 'amber'
+                              : step.status === 'complete'
+                                ? 'success'
+                                : 'muted'
+                          }
+                        >
+                          {step.status}
+                        </Badge>
+                      </button>
+                    ))}
+                  </div>
                 </section>
+
               </div>
             )}
           </div>
@@ -336,25 +289,6 @@ export default function App() {
                   <MetricPill label="Confidence" value={formatPercent(state.confidence)} tone={state.confidence > 74 ? 'trust' : state.confidence > 48 ? 'amber' : 'hostile'} icon={<Gauge size={11} strokeWidth={2.2} className="text-[#4f8cff]" />} />
                 </div>
               </Card>
-
-              <div className="flex flex-wrap gap-2">
-                {state.workflow.map((step) => (
-                  <button
-                    key={step.id}
-                    onClick={() => dispatch({ type: 'set-screen', screen: step.id })}
-                    className={cn(
-                      'border px-3 py-2 text-[11px] uppercase tracking-[0.12em] transition',
-                      step.status === 'active'
-                        ? 'border-amber-500/30 bg-amber-500/10 text-[#f3f3f3]'
-                        : step.status === 'complete'
-                          ? 'border-white/[0.07] bg-[#151515] text-[#d6d6d6] hover:bg-[#191919]'
-                          : 'border-white/[0.05] bg-[#101010] text-[#8c8c8c] hover:bg-[#151515]',
-                    )}
-                  >
-                    {step.label}
-                  </button>
-                ))}
-              </div>
             </div>
           </header>
 
@@ -427,6 +361,12 @@ function renderScreenContent(
   state: SimulationState,
   dispatch: ReturnType<typeof useAnvilSimulation>['dispatch'],
   onExport: () => void,
+  overviewFocusSummary: {
+    scenario: string;
+    environment: string;
+    epoch: string;
+    workflow: string;
+  },
 ) {
   switch (state.screen) {
     case 'overview':
@@ -435,6 +375,7 @@ function renderScreenContent(
           state={state}
           onSelectEvent={(id) => dispatch({ type: 'select-event', id })}
           onSelectEvidence={(id) => dispatch({ type: 'select-evidence', id })}
+          focusSummary={overviewFocusSummary}
         />
       );
     case 'live':
@@ -504,7 +445,14 @@ function renderScreenContent(
         />
       );
     default:
-      return <OverviewScreen state={state} onSelectEvent={(id) => dispatch({ type: 'select-event', id })} onSelectEvidence={(id) => dispatch({ type: 'select-evidence', id })} />;
+      return (
+        <OverviewScreen
+          state={state}
+          onSelectEvent={(id) => dispatch({ type: 'select-event', id })}
+          onSelectEvidence={(id) => dispatch({ type: 'select-evidence', id })}
+          focusSummary={overviewFocusSummary}
+        />
+      );
   }
 }
 

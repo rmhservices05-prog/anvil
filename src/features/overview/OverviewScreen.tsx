@@ -16,10 +16,17 @@ export function OverviewScreen({
   state,
   onSelectEvent,
   onSelectEvidence,
+  focusSummary,
 }: {
   state: SimulationState;
   onSelectEvent: (id: string) => void;
   onSelectEvidence: (id: string) => void;
+  focusSummary: {
+    scenario: string;
+    environment: string;
+    epoch: string;
+    workflow: string;
+  };
 }) {
   const recentTimeline = state.timeline.slice(-4).reverse();
   const recentEvidence = state.evidence.slice(0, 4);
@@ -33,6 +40,34 @@ export function OverviewScreen({
         tag={state.session.phase}
         icon={<Activity size={14} strokeWidth={2.2} className="text-[#4f8cff]" />}
       />
+
+      <Card className="space-y-3">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <div className="micro-label">Current focus</div>
+            <div className="text-sm text-slate-400">Shared context moved out of the sidebar</div>
+          </div>
+          <Badge tone={state.summary.alertCount > 0 ? 'warn' : 'success'}>{state.summary.alertCount} alerts</Badge>
+        </div>
+        <div className="grid gap-2 lg:grid-cols-4">
+          <Button variant="outline" className="h-auto flex-col items-start justify-start gap-1 px-3 py-3 text-left">
+            <span className="micro-label">Scenario</span>
+            <span className="text-sm font-medium text-white">{focusSummary.scenario}</span>
+          </Button>
+          <Button variant="outline" className="h-auto flex-col items-start justify-start gap-1 px-3 py-3 text-left">
+            <span className="micro-label">Environment</span>
+            <span className="text-sm font-medium text-white">{focusSummary.environment}</span>
+          </Button>
+          <Button variant="outline" className="h-auto flex-col items-start justify-start gap-1 px-3 py-3 text-left">
+            <span className="micro-label">Current epoch</span>
+            <span className="text-sm font-medium text-white">{focusSummary.epoch}</span>
+          </Button>
+          <Button variant="default" className="h-auto flex-col items-start justify-start gap-1 px-3 py-3 text-left">
+            <span className="micro-label text-white/70">Workflow stage</span>
+            <span className="text-sm font-medium text-white">{focusSummary.workflow}</span>
+          </Button>
+        </div>
+      </Card>
 
       <div className="grid gap-4 xl:grid-cols-[1.35fr_0.65fr]">
         <Card className="space-y-4">
