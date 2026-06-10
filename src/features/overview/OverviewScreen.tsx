@@ -6,27 +6,82 @@ import { SectionHeader } from '../../components/SectionHeader';
 import { StatusBadge } from '../../components/StatusBadge';
 import { ThreatGauge } from '../../components/ThreatGauge';
 import { TrustStrip } from '../../components/TrustStrip';
-import { Card } from '../../components/ui';
+import { Badge, Button, Card } from '../../components/ui';
 import { SimulationState } from '../../types';
 import { formatPercent } from '../../lib/seed';
-import { ResponsiveContainer, AreaChart, Area, CartesianGrid, XAxis, YAxis, Tooltip, Legend } from 'recharts';
+import { Activity, Clock3, FileText, Gauge, Lock, Shield, ShieldAlert } from 'lucide-react';
+import { AreaChart, Area, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 export function OverviewScreen({
   state,
   onSelectEvent,
+  onSelectEvidence,
 }: {
   state: SimulationState;
   onSelectEvent: (id: string) => void;
+  onSelectEvidence: (id: string) => void;
 }) {
+  const recentTimeline = state.timeline.slice(-4).reverse();
+  const recentEvidence = state.evidence.slice(0, 4);
+
   return (
     <div className="space-y-6">
       <SectionHeader
         eyebrow="Overview"
         title="Mission trust and authority continuity"
-        description="A defence-grade validation console that keeps the focus on authenticated command authority, rejected hostile attempts, lineage continuity, and fail-secure recovery."
-        tag={state.headline}
+        description="This view is the operational heartbeat: lifecycle, connection posture, alerts, evidence readiness, and the latest state changes all stay synchronized with the shared runtime."
+        tag={state.session.phase}
+        icon={<Activity size={14} strokeWidth={2.2} className="text-[#4f8cff]" />}
       />
+
+      <div className="grid gap-4 xl:grid-cols-[1.35fr_0.65fr]">
+        <Card className="space-y-4">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <div className="micro-label">Session lifecycle</div>
+              <div className="text-base font-semibold text-white">Shared runtime is live across every screen</div>
+            </div>
+            <StatusBadge state={state.trustState} />
+          </div>
+          <div className="grid gap-3 md:grid-cols-4">
+            <MetricCard label="Phase" value={state.session.phase} subvalue="Console lifecycle state" tone="amber" icon={<Clock3 size={13} strokeWidth={2.2} className="text-[#4f8cff]" />} />
+            <MetricCard label="Connection" value={state.connectionState} subvalue="Derived connection state" tone={state.connectionState === 'connected' ? 'trust' : 'hostile'} icon={<Activity size={13} strokeWidth={2.2} className="text-[#4f8cff]" />} />
+            <MetricCard label="Alerts" value={`${state.summary.alertCount}`} subvalue="Unacknowledged console alerts" tone={state.summary.alertCount > 0 ? 'hostile' : 'trust'} icon={<ShieldAlert size={13} strokeWidth={2.2} className="text-[#4f8cff]" />} />
+            <MetricCard label="Evidence" value={`${state.summary.evidenceCount}`} subvalue="Export-ready evidence items" tone="amber" icon={<FileText size={13} strokeWidth={2.2} className="text-[#4f8cff]" />} />
+          </div>
+        </Card>
+
+        <Card className="space-y-3">
+          <div className="micro-label">Scenario metadata</div>
+          <div className="text-sm font-semibold text-white">{state.scenario.title}</div>
+          <div className="text-sm leading-6 text-slate-400">{state.scenario.subtitle}</div>
+          <div className="flex flex-wrap gap-2">
+            {state.scenario.tags.map((tag) => (
+              <Badge key={tag} tone="muted">
+                {tag}
+              </Badge>
+            ))}
+          </div>
+          <div className="rounded-xl border border-white/6 bg-black/20 p-3">
+            <div className="micro-label">What changed</div>
+            <div className="mt-2 space-y-1 text-sm text-slate-300">
+              {state.summary.changed.map((line) => (
+                <div key={line}>{line}</div>
+              ))}
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Badge tone={state.connectionState === 'connected' ? 'success' : 'warn'}>{state.connectionState}</Badge>
+            <Badge tone={state.reviewMode ? 'amber' : 'muted'}>{state.reviewMode ? 'review mode' : 'live mode'}</Badge>
+            <Button variant="outline" onClick={() => onSelectEvidence(state.evidence[0]?.id ?? '')} disabled={!state.evidence.length}>
+              Inspect evidence
+            </Button>
+          </div>
+        </Card>
+      </div>
+
       <TrustStrip metrics={state.metrics} />
+
       <div className="grid gap-4 xl:grid-cols-3">
         <Card className="xl:col-span-2">
           <div className="flex items-center justify-between">
@@ -43,7 +98,12 @@ export function OverviewScreen({
         <div className="space-y-4">
           <ThreatGauge value={state.threatPressure} />
           <Card className="space-y-3">
-            <div className="micro-label">Command authority outcome</div>
+            <div className="flex items-center gap-2">
+              <span className="inline-flex h-7 w-7 items-center justify-center rounded-[4px] border border-[#2358ca]/35 bg-[#102247] text-[#4f8cff]">
+                <Lock size={13} strokeWidth={2.2} className="text-[#4f8cff]" />
+              </span>
+              <div className="micro-label">Command authority outcome</div>
+            </div>
             <div className="text-2xl font-semibold text-white">{state.headline}</div>
             <div className="grid grid-cols-2 gap-3 text-sm">
               <div className="rounded-xl border border-white/6 bg-black/20 p-3">
@@ -66,15 +126,90 @@ export function OverviewScreen({
           </Card>
         </div>
       </div>
+
+      <div className="grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
+        <Card className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="micro-label">Recent timeline</div>
+              <div className="text-base font-semibold text-white">Latest state transitions and operator actions</div>
+            </div>
+            <Badge tone="amber">{recentTimeline.length} entries</Badge>
+          </div>
+          <div className="space-y-2">
+            {recentTimeline.map((entry) => (
+              <button
+                key={entry.id}
+                onClick={() => onSelectEvent(entry.id)}
+                className="flex w-full items-start justify-between gap-4 border border-white/[0.06] bg-[#151515] px-3 py-2 text-left transition hover:border-amber-500/30 hover:bg-[#181818]"
+              >
+                <div>
+                  <div className="text-[11px] uppercase tracking-[0.16em] text-[#8c8c8c]">{entry.timestamp}</div>
+                  <div className="mt-1 text-[12px] font-medium text-[#f3f3f3]">{entry.title}</div>
+                  <div className="mt-1 text-[11px] leading-5 text-[#8c8c8c]">{entry.details}</div>
+                </div>
+                <Badge tone={entry.severity === 'critical' ? 'danger' : entry.severity === 'warn' ? 'warn' : 'success'}>{entry.type}</Badge>
+              </button>
+            ))}
+          </div>
+        </Card>
+
+        <Card className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="micro-label">Evidence readiness</div>
+              <div className="text-base font-semibold text-white">What is ready for export</div>
+            </div>
+            <Badge tone={state.summary.evidenceCount > 0 ? 'success' : 'muted'}>{state.summary.evidenceCount}</Badge>
+          </div>
+          <div className="space-y-2">
+            {recentEvidence.map((item) => (
+              <button
+                key={item.id}
+                onClick={() => onSelectEvidence(item.id)}
+                className="w-full rounded-xl border border-white/6 bg-black/20 p-3 text-left transition hover:border-amber-500/30 hover:bg-white/5"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <div className="text-sm font-medium text-white">{item.title}</div>
+                  <Badge tone={item.severity === 'critical' ? 'danger' : item.severity === 'warn' ? 'warn' : 'success'}>{item.category}</Badge>
+                </div>
+                <div className="mt-2 text-xs leading-5 text-slate-400">{item.summary}</div>
+              </button>
+            ))}
+          </div>
+        </Card>
+      </div>
+
       <ProtocolTable metrics={state.protocolMetrics} />
       <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
         <AttackLog events={state.attackEvents.slice(0, 12)} onSelect={(event) => onSelectEvent(event.id)} />
         <GuardrailCard guardrails={state.guardrails} />
       </div>
       <div className="grid gap-4 md:grid-cols-3">
-        <MetricCard label="Operator confidence" value={formatPercent(state.confidence)} subvalue="Derived from hostile pressure, auth continuity, and guardrail retention." tone={state.trustState === 'trusted' ? 'trust' : 'amber'} progress={state.confidence} />
-        <MetricCard label="Integrity continuity" value={formatPercent(state.metrics.integrityContinuity)} subvalue="Rejects stale, replayed, or unsafe authority transitions." tone="trust" progress={state.metrics.integrityContinuity} />
-        <MetricCard label="Guardrail retention" value={state.metrics.guardrailLock} subvalue="Last verified guardrails remain bound to the local operator policy." tone={state.metrics.guardrailLock === 'locked' ? 'hostile' : 'amber'} progress={state.metrics.rejectedHostileAttempts} />
+        <MetricCard
+          label="Operator confidence"
+          value={formatPercent(state.confidence)}
+          subvalue="Derived from hostile pressure, auth continuity, and guardrail retention."
+          tone={state.trustState === 'trusted' ? 'trust' : 'amber'}
+          progress={state.confidence}
+          icon={<Gauge size={13} strokeWidth={2.2} className="text-[#4f8cff]" />}
+        />
+        <MetricCard
+          label="Integrity continuity"
+          value={formatPercent(state.metrics.integrityContinuity)}
+          subvalue="Rejects stale, replayed, or unsafe authority transitions."
+          tone="trust"
+          progress={state.metrics.integrityContinuity}
+          icon={<Shield size={13} strokeWidth={2.2} className="text-[#4f8cff]" />}
+        />
+        <MetricCard
+          label="Guardrail retention"
+          value={state.metrics.guardrailLock}
+          subvalue="Last verified guardrails remain bound to the local operator policy."
+          tone={state.metrics.guardrailLock === 'locked' ? 'hostile' : 'amber'}
+          progress={state.metrics.rejectedHostileAttempts}
+          icon={<Lock size={13} strokeWidth={2.2} className="text-[#4f8cff]" />}
+        />
       </div>
     </div>
   );

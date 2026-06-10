@@ -2,6 +2,7 @@ import { AttackType } from '../types';
 import { attackPresets } from '../data/mock';
 import { Badge, Button, Card } from './ui';
 import { cn } from '../lib/utils';
+import { Gauge, Radar, ShieldAlert, SlidersHorizontal } from 'lucide-react';
 
 export function ControlPanel({
   active,
@@ -32,7 +33,12 @@ export function ControlPanel({
     <Card className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <div className="micro-label">Attack controls</div>
+          <div className="flex items-center gap-2">
+            <span className="inline-flex h-7 w-7 items-center justify-center rounded-[4px] border border-[#2358ca]/35 bg-[#102247] text-[#4f8cff]">
+              <Radar size={13} strokeWidth={2.2} className="text-[#4f8cff]" />
+            </span>
+            <div className="micro-label">Attack controls</div>
+          </div>
           <div className="text-base font-semibold text-white">Composite AI-generated attack composition</div>
         </div>
         <Badge tone="danger">{active.length} active</Badge>
@@ -45,9 +51,13 @@ export function ControlPanel({
               key={attack.id}
               onClick={() => onToggle(attack.id)}
               className={cn('rounded-xl border p-3 text-left transition', enabled ? 'border-amber-500/30 bg-amber-500/10' : 'border-white/6 bg-white/3 hover:bg-white/5')}
+              aria-pressed={enabled}
             >
               <div className="flex items-center justify-between gap-2">
-                <div className="text-sm font-medium text-white">{attack.label}</div>
+                <div className="flex items-center gap-2 text-sm font-medium text-white">
+                  <ShieldAlert size={14} strokeWidth={2.2} className="text-[#4f8cff]" />
+                  {attack.label}
+                </div>
                 <Badge tone={enabled ? 'danger' : 'muted'}>{enabled ? 'armed' : 'idle'}</Badge>
               </div>
               <div className="mt-2 text-xs leading-5 text-slate-400">{attack.description}</div>
@@ -59,7 +69,10 @@ export function ControlPanel({
         {sliders.map((item) => (
           <div key={item.key} className="rounded-xl border border-white/6 bg-black/20 p-3">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-slate-300">{item.label}</span>
+              <span className="flex items-center gap-2 text-sm text-slate-300">
+                <SlidersHorizontal size={14} strokeWidth={2.2} className="text-[#4f8cff]" />
+                {item.label}
+              </span>
               <span className="text-sm font-semibold text-white">{item.value}</span>
             </div>
             <input
@@ -74,7 +87,10 @@ export function ControlPanel({
         ))}
       </div>
       <div className="flex flex-wrap items-center gap-3">
-        <Button variant="danger" onClick={onLaunch}>Launch composite attack</Button>
+        <Button variant="danger" onClick={onLaunch}>
+          <Gauge size={15} strokeWidth={2.2} className="text-[#4f8cff]" />
+          Launch composite attack
+        </Button>
         <Badge tone="warn">AI-generated adversary profile ready</Badge>
       </div>
     </Card>

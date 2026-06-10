@@ -1,19 +1,27 @@
 import { LineageBranch } from '../types';
 import { Badge, Card } from './ui';
 import { cn } from '../lib/utils';
+import { Workflow } from 'lucide-react';
 
 export function LineageGraph({
   branches,
   onSelect,
+  selectedBranchId,
 }: {
   branches: LineageBranch[];
   onSelect: (branch: LineageBranch) => void;
+  selectedBranchId: string | undefined;
 }) {
   return (
     <Card className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <div className="micro-label">Lineage graph</div>
+          <div className="flex items-center gap-2">
+            <span className="inline-flex h-7 w-7 items-center justify-center rounded-[4px] border border-[#2358ca]/35 bg-[#102247] text-[#4f8cff]">
+              <Workflow size={13} strokeWidth={2.2} className="text-[#4f8cff]" />
+            </span>
+            <div className="micro-label">Lineage graph</div>
+          </div>
           <div className="text-base font-semibold text-white">Branch continuity across verified, rejected, and recovery epochs</div>
         </div>
         <Badge tone="amber">Epoch ledger</Badge>
@@ -28,6 +36,7 @@ export function LineageGraph({
                 onClick={() => onSelect(branch)}
                 className={cn(
                   'relative mx-auto block h-24 w-24 rounded-full border transition hover:scale-105',
+                  selectedBranchId === branch.id ? 'ring-2 ring-amber-400/70' : '',
                   branch.status === 'verified'
                     ? 'border-trust/40 bg-trust/10'
                     : branch.status === 'active'

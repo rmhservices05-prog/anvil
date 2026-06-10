@@ -1,6 +1,7 @@
 import { ProtocolMetric } from '../types';
 import { Card, Badge } from './ui';
 import { cn } from '../lib/utils';
+import { Database } from 'lucide-react';
 
 const rows = [
   { key: 'survivesCorruption', label: 'Survives corruption' },
@@ -17,7 +18,12 @@ export function ProtocolTable({ metrics }: { metrics: ProtocolMetric[] }) {
     <Card className="overflow-hidden p-0">
       <div className="flex items-center justify-between border-b border-white/6 px-4 py-4">
         <div>
-          <div className="micro-label">Protocol comparison snapshot</div>
+          <div className="flex items-center gap-2">
+            <span className="inline-flex h-7 w-7 items-center justify-center rounded-[4px] border border-[#2358ca]/35 bg-[#102247] text-[#4f8cff]">
+              <Database size={13} strokeWidth={2.2} className="text-[#4f8cff]" />
+            </span>
+            <div className="micro-label">Protocol comparison snapshot</div>
+          </div>
           <div className="text-base font-semibold text-white">Authority continuity under contested-spectrum stress</div>
         </div>
         <Badge tone="amber">Engineering view</Badge>

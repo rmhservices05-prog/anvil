@@ -41,6 +41,35 @@ export type ProtocolName =
 
 export type TrustState = 'trusted' | 'degraded' | 'contested' | 'recovery' | 'fail-secure';
 export type GuardrailState = 'retained' | 'contested' | 'locked' | 'revalidation-required';
+export type SessionPhase = 'idle' | 'preparing' | 'connecting' | 'running' | 'degraded' | 'recovering' | 'exporting' | 'review';
+export type ConnectionState = 'disconnected' | 'connecting' | 'connected' | 'degraded' | 'lost';
+
+export type SessionEventType =
+  | 'session.started'
+  | 'session.paused'
+  | 'session.resumed'
+  | 'session.reset'
+  | 'attack.armed'
+  | 'attack.injected'
+  | 'link.state_changed'
+  | 'lineage.branch_selected'
+  | 'evidence.exported'
+  | 'guardrail.violated'
+  | 'guardrail.recovered'
+  | 'protocol.filtered'
+  | 'node.selected'
+  | 'branch.selected'
+  | 'event.selected'
+  | 'evidence.selected'
+  | 'scenario.selected'
+  | 'sidebar.toggled'
+  | 'layout.changed'
+  | 'session.connected'
+  | 'session.degraded'
+  | 'session.recovering'
+  | 'session.reviewed'
+  | 'session.stepped'
+  | 'session.exporting';
 
 export interface Scenario {
   id: string;
@@ -87,6 +116,113 @@ export interface CommandAttempt {
   auth: number;
   guardrail: number;
 }
+
+export interface EvidenceItem {
+  id: string;
+  title: string;
+  timestamp: string;
+  category: 'scenario' | 'timeline' | 'alert' | 'protocol' | 'lineage' | 'guardrail' | 'export';
+  summary: string;
+  severity: 'info' | 'warn' | 'critical';
+  source: string;
+  details: string;
+}
+
+export interface ConsoleAlert {
+  id: string;
+  level: 'info' | 'warn' | 'critical';
+  title: string;
+  message: string;
+  acknowledged: boolean;
+  timestamp: string;
+}
+
+export interface SessionTimelineEntry {
+  id: string;
+  timestamp: string;
+  type: SessionEventType;
+  title: string;
+  details: string;
+  severity: 'info' | 'warn' | 'critical';
+}
+
+export interface PanelLayoutState {
+  sidebarCollapsed: boolean;
+  activeScreen: ScreenId;
+  selectedDetail?: SelectedDetail | undefined;
+  filters: {
+    protocol?: ProtocolName | undefined;
+    lineage?: LineageBranch['status'] | 'all' | undefined;
+    comparisonMode?: boolean | undefined;
+    alertsOnly?: boolean;
+    reviewOnly?: boolean;
+  };
+  dockedPanels: {
+    timeline: boolean;
+    alerts: boolean;
+    evidence: boolean;
+  };
+}
+
+export interface WorkspaceState {
+  selectedScenarioId: string;
+  lastSessionId?: string | undefined;
+  savedPreferences: {
+    theme: 'console';
+    density: 'compact' | 'balanced';
+  };
+  recentSessions: Array<{
+    sessionId: string;
+    scenarioId: string;
+    endedAt: string;
+    headline: string;
+  }>;
+  recentExports: Array<{
+    exportId: string;
+    generatedAt: string;
+    sessionId: string;
+    summary: string;
+  }>;
+}
+
+export interface ExportPayload {
+  version: string;
+  generatedAt: string;
+  session: {
+    id: string;
+    phase: SessionPhase;
+    connection: ConnectionState;
+    status: string;
+    startedAt: string;
+    updatedAt: string;
+    reviewMode: boolean;
+  };
+  timeline: SessionTimelineEntry[];
+  alerts: ConsoleAlert[];
+  metrics: TrustMetrics;
+  scenario: Scenario;
+  selectedDetail?: SelectedDetail | undefined;
+  evidence: EvidenceItem[];
+  lineages: LineageBranch[];
+  protocolSummary: ProtocolMetric[];
+}
+
+export interface SessionSummary {
+  id: string;
+  phase: SessionPhase;
+  connection: ConnectionState;
+  status: string;
+  startedAt: string;
+  updatedAt: string;
+  step: number;
+  reviewMode: boolean;
+}
+
+export type SelectedDetail =
+  | { type: 'node'; id: string }
+  | { type: 'event'; id: string }
+  | { type: 'branch'; id: string }
+  | { type: 'evidence'; id: string };
 
 export interface TrustMetrics {
   verifiedCommandRate: number;
@@ -163,6 +299,8 @@ export interface GuardrailItem {
 
 export interface SimulationState {
   screen: ScreenId;
+  session: SessionSummary;
+  connectionState: ConnectionState;
   scenario: Scenario;
   phase: ExercisePhase;
   environment: EnvironmentId;
@@ -187,12 +325,26 @@ export interface SimulationState {
   guardrails: GuardrailItem[];
   series: TimeSeriesPoint[];
   headline: string;
+  summary: {
+    sessionPhase: SessionPhase;
+    connectionState: ConnectionState;
+    alertCount: number;
+    evidenceCount: number;
+    selectedScenarioId: string;
+    changed: string[];
+  };
   workflow: WorkflowStep[];
   alerts: MissionAlert[];
   briefing: MissionBrief[];
-  selectedDetail?: {
-    type: 'node' | 'event' | 'branch';
-    id: string;
-  };
+  timeline: SessionTimelineEntry[];
+  consoleAlerts: ConsoleAlert[];
+  evidence: EvidenceItem[];
   exportStatus: 'idle' | 'success';
+  exportPayload?: ExportPayload;
+  workspace: WorkspaceState;
+  layout: PanelLayoutState;
+  selectedDetail?: SelectedDetail | undefined;
+  reviewMode: boolean;
+  sessionPhase: SessionPhase;
+  persistenceKey: string;
 }

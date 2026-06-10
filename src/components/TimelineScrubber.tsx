@@ -1,5 +1,6 @@
 import { ExercisePhase } from '../types';
 import { Badge, Card } from './ui';
+import { Clock3 } from 'lucide-react';
 
 export function TimelineScrubber({
   phase,
@@ -14,7 +15,12 @@ export function TimelineScrubber({
     <Card className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <div className="micro-label">Timeline scrubber</div>
+          <div className="flex items-center gap-2">
+            <span className="inline-flex h-7 w-7 items-center justify-center rounded-[4px] border border-[#2358ca]/35 bg-[#102247] text-[#4f8cff]">
+              <Clock3 size={13} strokeWidth={2.2} className="text-[#4f8cff]" />
+            </span>
+            <div className="micro-label">Timeline scrubber</div>
+          </div>
           <div className="text-base font-semibold text-white">Scrub the exercise and reflow state across the console</div>
         </div>
         <Badge tone="amber">{phase.replace('-', ' ')}</Badge>

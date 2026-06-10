@@ -1,19 +1,27 @@
 import { AttackEvent } from '../types';
 import { Badge, Card } from './ui';
 import { cn } from '../lib/utils';
+import { Activity } from 'lucide-react';
 
 export function AttackLog({
   events,
   onSelect,
+  selectedEventId,
 }: {
   events: AttackEvent[];
   onSelect?: (event: AttackEvent) => void;
+  selectedEventId?: string;
 }) {
   return (
     <Card className="space-y-3">
       <div className="flex items-center justify-between border-b border-white/[0.06] pb-3">
         <div>
-          <div className="micro-label">Event log</div>
+          <div className="flex items-center gap-2">
+            <span className="inline-flex h-7 w-7 items-center justify-center rounded-[4px] border border-[#2358ca]/35 bg-[#102247] text-[#4f8cff]">
+              <Activity size={13} strokeWidth={2.2} className="text-[#4f8cff]" />
+            </span>
+            <div className="micro-label">Event log</div>
+          </div>
           <div className="text-[13px] font-medium text-[#f3f3f3]">Timestamped command and link events</div>
         </div>
         <Badge tone="muted">Live feed</Badge>
@@ -33,7 +41,7 @@ export function AttackLog({
               onClick={() => onSelect?.(event)}
               className={cn(
                 'grid w-full grid-cols-[90px_120px_minmax(0,1fr)_120px_100px] gap-2 border-b border-white/[0.05] px-3 py-2 text-left transition hover:bg-white/[0.03]',
-                'focus:outline-none focus:bg-white/[0.04]',
+                selectedEventId === event.id ? 'bg-amber-500/8' : 'focus:outline-none focus:bg-white/[0.04]',
               )}
             >
               <span className="font-mono text-[11px] text-[#8c8c8c]">{event.time}</span>

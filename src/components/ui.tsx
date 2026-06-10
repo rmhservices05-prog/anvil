@@ -5,10 +5,12 @@ export function Button({
   children,
   variant = 'default',
   className,
+  selected = false,
   ...props
 }: React.ButtonHTMLAttributes<HTMLButtonElement> & {
   children: ReactNode;
   variant?: 'default' | 'ghost' | 'amber' | 'danger' | 'outline';
+  selected?: boolean;
 }) {
   const styles: Record<string, string> = {
     default: 'border border-[#2d5fd6] bg-[#1f5fd1] text-white hover:bg-[#255fe0]',
@@ -22,9 +24,11 @@ export function Button({
       className={cn(
         'inline-flex items-center justify-center gap-2 rounded-[4px] px-3 py-2 text-[12px] font-medium tracking-normal transition',
         'disabled:pointer-events-none disabled:opacity-50',
+        selected ? 'ring-1 ring-[#e0b466]/60' : '',
         styles[variant],
         className,
       )}
+      aria-pressed={selected || undefined}
       {...props}
     >
       {children}
@@ -81,11 +85,13 @@ export function Progress({
 export function Drawer({
   open,
   title,
+  subtitle,
   children,
   onClose,
 }: {
   open: boolean;
   title: string;
+  subtitle?: string;
   children: ReactNode;
   onClose: () => void;
 }) {
@@ -100,6 +106,7 @@ export function Drawer({
         <div>
           <div className="micro-label">Operator detail</div>
           <div className="text-sm font-semibold text-[#f3f3f3]">{title}</div>
+          {subtitle ? <div className="mt-1 text-[11px] leading-5 text-[#8c8c8c]">{subtitle}</div> : null}
         </div>
         <Button variant="ghost" onClick={onClose}>
           Close

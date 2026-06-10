@@ -1,4 +1,24 @@
-import { AttackType, CommandAttempt, EnvironmentId, ExercisePhase, LineageBranch, NetworkLink, NetworkNode, ProtocolMetric, Scenario, AttackEvent } from '../types';
+import {
+  AttackType,
+  AttackEvent,
+  CommandAttempt,
+  ConnectionState,
+  ConsoleAlert,
+  EnvironmentId,
+  EvidenceItem,
+  ExercisePhase,
+  LineageBranch,
+  NetworkLink,
+  NetworkNode,
+  ProtocolMetric,
+  Scenario,
+  SessionEventType,
+  SessionPhase,
+  SessionTimelineEntry,
+  SelectedDetail,
+  SimulationState,
+  TrustState,
+} from '../types';
 import { clamp, mulberry32, range } from '../lib/seed';
 
 export const environments: { id: EnvironmentId; label: string; summary: string }[] = [
@@ -49,6 +69,8 @@ export const scenarioCatalog: Scenario[] = [
   },
 ];
 
+export const scenarios = scenarioCatalog;
+
 export function scenarioForEnvironment(environment: EnvironmentId) {
   const byEnv: Record<EnvironmentId, Scenario> = {
     'surface-rf': scenarioCatalog[1]!,
@@ -72,6 +94,196 @@ export function scenarioForEnvironment(environment: EnvironmentId) {
     'mesh-relay': scenarioCatalog[0]!,
   };
   return byEnv[environment];
+}
+
+export function deriveSessionPhase(state: Pick<SimulationState, 'reviewMode' | 'isRunning' | 'exportStatus' | 'timeElapsed' | 'confidence'>): SessionPhase {
+  if (state.exportStatus === 'success') return 'exporting';
+  if (state.reviewMode) return 'review';
+  if (!state.isRunning && state.timeElapsed === 0) return 'idle';
+  if (!state.isRunning && state.timeElapsed > 0) return state.confidence < 58 ? 'degraded' : 'recovering';
+  if (state.timeElapsed < 2) return 'preparing';
+  if (state.confidence < 42) return 'degraded';
+  return 'running';
+}
+
+export function deriveConnectionState(state: Pick<SimulationState, 'attackTypes' | 'threatPressure' | 'confidence' | 'reviewMode' | 'isRunning'>): ConnectionState {
+  if (state.reviewMode) return 'connected';
+  if (!state.isRunning) return state.threatPressure > 0 ? 'disconnected' : 'lost';
+  if (state.confidence < 28) return 'lost';
+  if (state.threatPressure > 72) return 'degraded';
+  return 'connected';
+}
+
+export function deriveTrustStateFromSession(confidence: number, threat: number, exercisePhase: ExercisePhase): TrustState {
+  if (exercisePhase === 'fail-secure') return 'fail-secure' as const;
+  if (exercisePhase === 'recovery') return confidence > 55 ? 'recovery' : 'contested';
+  if (confidence >= 78 && threat < 28) return 'trusted';
+  if (confidence >= 54) return 'degraded';
+  return 'contested';
+}
+
+export function deriveAlertSeverity(level: 'info' | 'warn' | 'critical', threatPressure: number, confidence: number) {
+  if (level === 'critical') return 'critical' as const;
+  if (threatPressure > 66 || confidence < 42) return 'critical' as const;
+  if (threatPressure > 34 || confidence < 68) return 'warn' as const;
+  return 'info' as const;
+}
+
+export function deriveEvidenceCategory(source: string): EvidenceItem['category'] {
+  if (source.includes('scenario')) return 'scenario';
+  if (source.includes('alert')) return 'alert';
+  if (source.includes('lineage')) return 'lineage';
+  if (source.includes('protocol')) return 'protocol';
+  if (source.includes('guardrail')) return 'guardrail';
+  if (source.includes('export')) return 'export';
+  return 'timeline';
+}
+
+export function exportSummaryText(state: Pick<SimulationState, 'headline' | 'confidence' | 'threatPressure' | 'sessionPhase' | 'connectionState'>) {
+  return `${state.headline} | ${Math.round(state.confidence)}% confidence | threat ${Math.round(state.threatPressure)} | ${state.sessionPhase} / ${state.connectionState}`;
+}
+
+export function buildSessionTimeline(seed: number, state: Pick<SimulationState, 'timeElapsed' | 'phase' | 'attackTypes' | 'trustState' | 'exportStatus' | 'selectedDetail'>): SessionTimelineEntry[] {
+  const rand = mulberry32(seed);
+  const events: Array<{ type: SessionEventType; title: string; details: string; severity: SessionTimelineEntry['severity'] }> = [
+    {
+      type: 'session.started',
+      title: 'Session initialized',
+      details: `Exercise phase ${state.phase.replace('-', ' ')} staged with ${state.attackTypes.length} active attack primitives.`,
+      severity: 'info',
+    },
+    {
+      type: 'attack.armed',
+      title: 'Attack chain armed',
+      details: state.attackTypes.length > 0 ? `Active vectors: ${state.attackTypes.map((attack) => attack.replace('-', ' ')).join(', ')}` : 'No attack primitives armed yet.',
+      severity: state.attackTypes.length > 2 ? 'critical' : 'warn',
+    },
+    {
+      type: 'session.stepped',
+      title: 'Runtime step',
+      details: `Session tick ${state.timeElapsed} with authority ${state.trustState}.`,
+      severity: state.trustState === 'trusted' ? 'info' : 'warn',
+    },
+    {
+      type: 'session.exporting',
+      title: 'Evidence stage prepared',
+      details: state.exportStatus === 'success' ? 'Export artifact prepared and ready for download.' : 'Export pipeline ready when the operator requests it.',
+      severity: state.exportStatus === 'success' ? 'info' : 'warn',
+    },
+  ];
+
+  return events.map((event, index) => ({
+    id: `tl-${seed}-${index}`,
+    timestamp: `T+${String(index * 11 + Math.round(rand() * 5)).padStart(3, '0')}s`,
+    ...event,
+  }));
+}
+
+export function buildConsoleAlerts(seed: number, state: Pick<SimulationState, 'threatPressure' | 'confidence' | 'attackTypes' | 'trustState' | 'metrics'>): ConsoleAlert[] {
+  const rand = mulberry32(seed + 9);
+  const labels = [
+    {
+      id: 'pressure',
+      title: 'Spectrum pressure rising',
+      message: `Threat pressure is ${Math.round(state.threatPressure)} under the current attack profile.`,
+      level: deriveAlertSeverity('warn', state.threatPressure, state.confidence),
+    },
+    {
+      id: 'lineage',
+      title: 'Lineage continuity watch',
+      message: state.trustState === 'fail-secure' ? 'Last verified branch is pinned while stale authority is rejected.' : 'Lineage remains coherent, but selected branch drift is under observation.',
+      level: deriveAlertSeverity(state.trustState === 'fail-secure' ? 'critical' : 'warn', state.threatPressure, state.confidence),
+    },
+    {
+      id: 'guardrail',
+      title: 'Guardrail posture',
+      message: state.metrics.guardrailLock === 'locked' ? 'Guardrails are locked and preventing unsafe transitions.' : 'Guardrails remain retained with local fail-secure fallback available.',
+      level: deriveAlertSeverity(state.metrics.guardrailLock === 'locked' ? 'critical' : 'info', state.threatPressure, state.confidence),
+    },
+  ];
+
+  return labels.map((item, index) => ({
+    id: `${item.id}-${seed}-${index}`,
+    level: item.level,
+    title: item.title,
+    message: item.message,
+    acknowledged: rand() > 0.7 && index === 2,
+    timestamp: `T+${String(index * 14).padStart(3, '0')}s`,
+  }));
+}
+
+export function buildEvidenceItems(seed: number, state: Pick<SimulationState, 'scenario' | 'metrics' | 'headline' | 'attackTypes' | 'timeline' | 'trustState' | 'phase'>): EvidenceItem[] {
+  return [
+    {
+      id: `ev-scenario-${seed}`,
+      title: `${state.scenario.title} scenario sheet`,
+      timestamp: 'T+000s',
+      category: 'scenario',
+      summary: state.scenario.subtitle,
+      severity: 'info',
+      source: 'scenario',
+      details: state.scenario.doctrine,
+    },
+    {
+      id: `ev-timeline-${seed}`,
+      title: 'Timeline highlight',
+      timestamp: 'T+011s',
+      category: 'timeline',
+      summary: state.headline,
+      severity: state.trustState === 'trusted' ? 'info' : 'warn',
+      source: 'timeline',
+      details: state.timeline.map((entry) => `${entry.timestamp} ${entry.title}`).slice(0, 3).join(' | '),
+    },
+    {
+      id: `ev-alert-${seed}`,
+      title: 'Alert posture',
+      timestamp: 'T+019s',
+      category: 'alert',
+      summary: `${state.attackTypes.length} active attack vectors`,
+      severity: state.attackTypes.length > 2 ? 'critical' : 'warn',
+      source: 'alert',
+      details: `Integrity continuity ${Math.round(state.metrics.integrityContinuity)} and authority ${state.trustState}.`,
+    },
+    {
+      id: `ev-protocol-${seed}`,
+      title: 'Protocol comparison note',
+      timestamp: 'T+028s',
+      category: 'protocol',
+      summary: 'DQSP / Lineage remains the preferred continuity path under stress.',
+      severity: 'info',
+      source: 'protocol',
+      details: 'Protocol metrics capture survivability, wrong acceptance, and recovery under mixed attack.',
+    },
+    {
+      id: `ev-guardrail-${seed}`,
+      title: 'Guardrail disposition',
+      timestamp: 'T+034s',
+      category: 'guardrail',
+      summary: `Guardrail lock is ${state.metrics.guardrailLock}.`,
+      severity: state.metrics.guardrailLock === 'locked' ? 'critical' : 'info',
+      source: 'guardrail',
+      details: 'Fallback policy remains local and deterministic.',
+    },
+  ];
+}
+
+export function buildConnectionLifecycle(seed: number, state: Pick<SimulationState, 'confidence' | 'threatPressure' | 'isRunning'>): Array<{ timestamp: string; state: ConnectionState; title: string }> {
+  const rand = mulberry32(seed + 21);
+  const sequence: ConnectionState[] = ['disconnected', 'connecting', 'connected', state.threatPressure > 70 ? 'degraded' : 'connected', state.confidence < 30 ? 'lost' : 'connected'];
+  return sequence.map((entry, index) => ({
+    timestamp: `T+${String(index * 6 + Math.round(rand() * 2)).padStart(3, '0')}s`,
+    state: entry,
+    title:
+      entry === 'disconnected'
+        ? 'Console idle'
+        : entry === 'connecting'
+          ? 'Link handshake underway'
+          : entry === 'connected'
+            ? 'Operational link established'
+            : entry === 'degraded'
+              ? 'Link degrades under pressure'
+              : 'Link lost, fail-secure engaged',
+  }));
 }
 
 export function buildMockNodes(seed: number): NetworkNode[] {

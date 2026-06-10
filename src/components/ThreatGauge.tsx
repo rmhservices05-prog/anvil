@@ -1,4 +1,5 @@
 import { cn } from '../lib/utils';
+import { Gauge } from 'lucide-react';
 
 export function ThreatGauge({ value }: { value: number }) {
   const level = value < 30 ? 'low' : value < 60 ? 'moderate' : 'high';
@@ -6,7 +7,12 @@ export function ThreatGauge({ value }: { value: number }) {
     <div className="space-y-3">
       <div className="flex items-end justify-between gap-3 border-b border-white/[0.06] pb-3">
         <div>
-          <div className="micro-label">Threat pressure</div>
+          <div className="flex items-center gap-2">
+            <span className="inline-flex h-7 w-7 items-center justify-center rounded-[4px] border border-[#2358ca]/35 bg-[#102247] text-[#4f8cff]">
+              <Gauge size={13} strokeWidth={2.2} className="text-[#4f8cff]" />
+            </span>
+            <div className="micro-label">Threat pressure</div>
+          </div>
           <div className="mt-1 font-mono text-[28px] leading-none text-[#f3f3f3]">{Math.round(value)}</div>
         </div>
         <div className={cn('text-[10px] uppercase tracking-[0.18em]', level === 'high' ? 'text-[#e28a86]' : level === 'moderate' ? 'text-[#e0b466]' : 'text-[#72c8a0]')}>
