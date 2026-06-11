@@ -5,10 +5,8 @@ import {
   Eye,
   Gauge,
   Lock,
-  Menu,
   Pause,
   Play,
-  Radar,
   RotateCcw,
   Shield,
   ShieldAlert,
@@ -80,19 +78,19 @@ export default function App() {
         >
           <div className={cn('border-b border-white/[0.06] py-4', sidebarCollapsed ? 'px-3' : 'px-4')}>
             <div className={cn('flex items-center gap-3', sidebarCollapsed ? 'justify-center' : 'justify-between')}>
-              <div className={cn('flex items-center gap-3', sidebarCollapsed ? 'flex-col gap-2' : '')}>
-                <div className="grid h-8 w-8 place-items-center border border-[#2358ca]/35 bg-[#102247] text-[#4f8cff]">
-                  <Radar size={14} strokeWidth={2.2} className="text-[#4f8cff]" />
+              {!sidebarCollapsed ? (
+                <div>
+                  <div className="text-[13px] font-semibold tracking-normal text-[#f3f3f3]">ANVIL</div>
+                  <div className="text-[10px] uppercase tracking-[0.16em] text-[#626262]">Ground / Air console</div>
                 </div>
-                {!sidebarCollapsed ? (
-                  <div>
-                    <div className="text-[13px] font-semibold tracking-normal text-[#f3f3f3]">ANVIL</div>
-                    <div className="text-[10px] uppercase tracking-[0.16em] text-[#626262]">Ground / Air console</div>
-                  </div>
-                ) : null}
-              </div>
-              <Button variant="ghost" onClick={() => dispatch({ type: 'toggle-sidebar' })} aria-label="Toggle sidebar">
-                <Menu size={16} className="text-[#4f8cff]" />
+              ) : null}
+              <Button
+                variant="ghost"
+                onClick={() => dispatch({ type: 'toggle-sidebar' })}
+                aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                className="h-8 w-8 p-0"
+              >
+                <img src="/anvil-logo.png" alt="" aria-hidden="true" className="h-7 w-7 object-contain" />
               </Button>
             </div>
           </div>
@@ -101,12 +99,6 @@ export default function App() {
             {sidebarCollapsed ? (
               <div className="flex h-full flex-col items-center">
                 <div className="flex w-full flex-col items-center gap-3">
-                  <div className="grid h-8 w-8 place-items-center border border-[#2358ca]/35 bg-[#102247] text-[#4f8cff]">
-                    <Radar size={14} strokeWidth={2.2} className="text-[#4f8cff]" />
-                  </div>
-                  <Button variant="ghost" onClick={() => dispatch({ type: 'toggle-sidebar' })} aria-label="Expand sidebar">
-                    <Menu size={16} className="text-[#4f8cff]" />
-                  </Button>
                   <Badge tone={state.mode === 'Fail-secure' ? 'danger' : state.mode === 'Recovery' ? 'amber' : state.mode === 'Contested' ? 'warn' : 'success'}>
                     {state.mode.slice(0, 3)}
                   </Badge>
@@ -114,69 +106,11 @@ export default function App() {
                 </div>
 
                 <div className="mt-auto flex w-full flex-col items-center gap-2 border-t border-white/[0.07] pt-3">
-                  <Button variant="ghost" onClick={() => dispatch({ type: 'start-session' })} aria-label="Start session">
-                    <Play size={15} className="text-[#4f8cff]" />
-                  </Button>
-                  <Button variant="outline" onClick={() => dispatch({ type: 'connect' })} aria-label="Connect">
-                    <ShieldAlert size={15} className="text-[#4f8cff]" />
-                  </Button>
-                  <Button variant="ghost" onClick={() => dispatch({ type: 'pause' })} aria-label="Pause">
-                    <Pause size={15} className="text-[#4f8cff]" />
-                  </Button>
-                  <Button variant="outline" onClick={requestExport} aria-label="Export">
-                    <Download size={15} className="text-[#4f8cff]" />
-                  </Button>
-                  <Button variant="danger" onClick={() => dispatch({ type: 'reset' })} aria-label="Reset">
-                    <RotateCcw size={15} className="text-[#4f8cff]" />
-                  </Button>
-                  <div className="pt-2 text-[10px] uppercase tracking-[0.16em] text-[#626262]">{formatSeconds(state.timeElapsed)}</div>
+                  <div className="text-[10px] uppercase tracking-[0.16em] text-[#626262]">{formatSeconds(state.timeElapsed)}</div>
                 </div>
               </div>
             ) : (
               <div className="flex flex-col gap-5">
-                <section className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <span className="inline-flex h-7 w-7 items-center justify-center rounded-[4px] border border-[#2358ca]/35 bg-[#102247] text-[#4f8cff]">
-                      <Activity size={13} strokeWidth={2.2} className="text-[#4f8cff]" />
-                    </span>
-                    <div className="micro-label">Session lifecycle</div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <Button variant="default" onClick={() => dispatch({ type: 'start-session' })} className="justify-start">
-                      <Play size={15} className="text-[#4f8cff]" />
-                      Start
-                    </Button>
-                    <Button variant="outline" onClick={() => dispatch({ type: 'connect' })} className="justify-start">
-                      <ShieldAlert size={15} className="text-[#4f8cff]" />
-                      Connect
-                    </Button>
-                    <Button variant="ghost" onClick={() => dispatch({ type: 'pause' })} className="justify-start">
-                      <Pause size={15} className="text-[#4f8cff]" />
-                      Pause
-                    </Button>
-                    <Button variant="ghost" onClick={() => dispatch({ type: 'resume' })} className="justify-start">
-                      <Play size={15} className="text-[#4f8cff]" />
-                      Resume
-                    </Button>
-                    <Button variant="outline" onClick={() => dispatch({ type: 'step' })} className="justify-start">
-                      <Clock3 size={15} className="text-[#4f8cff]" />
-                      Step
-                    </Button>
-                    <Button variant="outline" onClick={() => dispatch({ type: 'set-review-mode', reviewMode: !state.reviewMode })} className="justify-start">
-                      <Eye size={15} className="text-[#4f8cff]" />
-                      Review
-                    </Button>
-                    <Button variant="amber" onClick={requestExport} className="justify-start">
-                      <Download size={15} className="text-[#4f8cff]" />
-                      Export
-                    </Button>
-                    <Button variant="danger" onClick={() => dispatch({ type: 'reset' })} className="justify-start">
-                      <RotateCcw size={15} className="text-[#4f8cff]" />
-                      Reset
-                    </Button>
-                  </div>
-                </section>
-
                 <section className="space-y-2">
                   <div className="flex items-center gap-2">
                     <span className="inline-flex h-7 w-7 items-center justify-center rounded-[4px] border border-[#2358ca]/35 bg-[#102247] text-[#4f8cff]">
@@ -216,7 +150,6 @@ export default function App() {
                     ))}
                   </div>
                 </section>
-
               </div>
             )}
           </div>
@@ -234,7 +167,7 @@ export default function App() {
         </aside>
 
         <main className="min-w-0 bg-[#101010]">
-          <header className="sticky top-0 z-20 border-b border-white/[0.07] bg-[#111111]/95 backdrop-blur">
+          <header className="border-b border-white/[0.07] bg-[#111111]/95">
             <div className="space-y-4 px-4 py-4 lg:px-5">
               <div className="flex flex-wrap items-start gap-3">
                 <div className="min-w-0 flex-1">
@@ -376,6 +309,14 @@ function renderScreenContent(
           onSelectEvent={(id) => dispatch({ type: 'select-event', id })}
           onSelectEvidence={(id) => dispatch({ type: 'select-evidence', id })}
           focusSummary={overviewFocusSummary}
+          onStart={() => dispatch({ type: 'start-session' })}
+          onConnect={() => dispatch({ type: 'connect' })}
+          onPause={() => dispatch({ type: 'pause' })}
+          onResume={() => dispatch({ type: 'resume' })}
+          onStep={() => dispatch({ type: 'step' })}
+          onToggleReview={() => dispatch({ type: 'set-review-mode', reviewMode: !state.reviewMode })}
+          onExport={onExport}
+          onReset={() => dispatch({ type: 'reset' })}
         />
       );
     case 'live':
@@ -451,6 +392,14 @@ function renderScreenContent(
           onSelectEvent={(id) => dispatch({ type: 'select-event', id })}
           onSelectEvidence={(id) => dispatch({ type: 'select-evidence', id })}
           focusSummary={overviewFocusSummary}
+          onStart={() => dispatch({ type: 'start-session' })}
+          onConnect={() => dispatch({ type: 'connect' })}
+          onPause={() => dispatch({ type: 'pause' })}
+          onResume={() => dispatch({ type: 'resume' })}
+          onStep={() => dispatch({ type: 'step' })}
+          onToggleReview={() => dispatch({ type: 'set-review-mode', reviewMode: !state.reviewMode })}
+          onExport={onExport}
+          onReset={() => dispatch({ type: 'reset' })}
         />
       );
   }

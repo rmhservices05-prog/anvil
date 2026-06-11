@@ -22,50 +22,50 @@ import {
 import { clamp, mulberry32, range } from '../lib/seed';
 
 export const environments: { id: EnvironmentId; label: string; summary: string }[] = [
-  { id: 'surface-rf', label: 'Surface RF', summary: 'Low-altitude contested line of sight with burst interference.' },
-  { id: 'ground-air', label: 'Ground / Air', summary: 'Mixed mobility command links with relay fallbacks.' },
-  { id: 'space', label: 'Space', summary: 'Delayed and fragmented authority across long-haul relays.' },
-  { id: 'subsurface', label: 'Subsurface', summary: 'Extremely constrained propagation and delayed returns.' },
-  { id: 'mesh-relay', label: 'Mesh Relay', summary: 'Distributed control with dynamic node trust shifts.' },
+  { id: 'surface-rf', label: 'Surface RF', summary: 'Contested line of sight.' },
+  { id: 'ground-air', label: 'Ground / Air', summary: 'Mobility links with relay fallback.' },
+  { id: 'space', label: 'Space', summary: 'Delayed authority across long relays.' },
+  { id: 'subsurface', label: 'Subsurface', summary: 'Tight propagation and delayed returns.' },
+  { id: 'mesh-relay', label: 'Mesh Relay', summary: 'Distributed control and shifting trust.' },
 ];
 
 export const phases: ExercisePhase[] = ['nominal', 'light-interference', 'spoofing-onset', 'mixed-attack', 'fail-secure', 'recovery'];
 
 export const attackPresets: { id: AttackType; label: string; description: string; intent: string }[] = [
-  { id: 'spoofed-commands', label: 'Spoofed commands', description: 'Mimic valid operator signatures and timing cadence.', intent: 'force false command' },
-  { id: 'replay-attack', label: 'Replay attack', description: 'Repeat previously accepted traffic with timing drift.', intent: 'deny command' },
-  { id: 'burst-jamming', label: 'Burst jamming', description: 'Concentrated interference bursts around command windows.', intent: 'exhaust trust' },
-  { id: 'bit-corruption', label: 'Bit corruption', description: 'Selective payload corruption under adverse link quality.', intent: 'trigger unsafe state' },
-  { id: 'reorder-attack', label: 'Reorder attack', description: 'Manipulate message sequencing to create ambiguity.', intent: 'split operator from platform' },
-  { id: 'authority-overwrite', label: 'Authority overwrite attempt', description: 'Try to replace verified operator authority.', intent: 'force false command' },
-  { id: 'lineage-desync', label: 'Lineage desync attempt', description: 'Fork state and desynchronize accepted branches.', intent: 'split operator from platform' },
-  { id: 'epoch-poisoning', label: 'Epoch poisoning attempt', description: 'Feed invalid epoch material to corrupt continuity.', intent: 'trigger unsafe state' },
+  { id: 'spoofed-commands', label: 'Spoofed commands', description: 'Mimic valid operator cadence.', intent: 'force false command' },
+  { id: 'replay-attack', label: 'Replay attack', description: 'Repeat accepted traffic with drift.', intent: 'deny command' },
+  { id: 'burst-jamming', label: 'Burst jamming', description: 'Hit command windows with interference.', intent: 'exhaust trust' },
+  { id: 'bit-corruption', label: 'Bit corruption', description: 'Corrupt payloads on weak links.', intent: 'trigger unsafe state' },
+  { id: 'reorder-attack', label: 'Reorder attack', description: 'Shuffle message order to create ambiguity.', intent: 'split operator from platform' },
+  { id: 'authority-overwrite', label: 'Authority overwrite attempt', description: 'Try to replace verified authority.', intent: 'force false command' },
+  { id: 'lineage-desync', label: 'Lineage desync attempt', description: 'Desync accepted branches.', intent: 'split operator from platform' },
+  { id: 'epoch-poisoning', label: 'Epoch poisoning attempt', description: 'Feed invalid epoch material.', intent: 'trigger unsafe state' },
 ];
 
 export const scenarioCatalog: Scenario[] = [
   {
     id: 'baseline-contested',
     title: 'Blackridge Relay Validation',
-    subtitle: 'Resilient command authority under mixed AI-generated attack chains.',
+    subtitle: 'Authority continuity under mixed attacks.',
     environment: 'mesh-relay',
     tags: ['Lineage', 'Fail-secure', 'Recovery'],
-    doctrine: 'Trusted authority continuity with local fallback guardrails.',
+    doctrine: 'Keep authority continuity and fallback local.',
   },
   {
     id: 'eastern-surface',
     title: 'Eastline Surface RF Exercise',
-    subtitle: 'Surface spectrum suppression with spoof and corruption pressure.',
+    subtitle: 'Surface suppression with spoof and corruption.',
     environment: 'surface-rf',
     tags: ['Jamming', 'Spoofing', 'Guardrails'],
-    doctrine: 'Reject hostile inputs and preserve last verified state.',
+    doctrine: 'Reject hostile inputs and preserve the last verified state.',
   },
   {
     id: 'orbital-chain',
     title: 'Apex Orbital Disruption Test',
-    subtitle: 'Delayed, intermittent authority with recovery over long-haul links.',
+    subtitle: 'Delayed authority with recovery over long links.',
     environment: 'space',
     tags: ['Delay', 'Epoch', 'Continuity'],
-    doctrine: 'Preserve authority continuity despite transient control loss.',
+    doctrine: 'Preserve continuity through temporary control loss.',
   },
 ];
 
@@ -77,19 +77,19 @@ export function scenarioForEnvironment(environment: EnvironmentId) {
     'ground-air': {
       id: 'ground-air-guard',
       title: 'Sentinel Corridor Exercise',
-      subtitle: 'Cross-domain authority under relay churn and mixed attack pressure.',
+      subtitle: 'Cross-domain authority under relay churn.',
       environment,
       tags: ['Relay', 'Recovery', 'Operator Trust'],
-      doctrine: 'Guardrail retention with verified authority transitions.',
+      doctrine: 'Retain guardrails and verify authority transitions.',
     },
     space: scenarioCatalog[2]!,
     subsurface: {
       id: 'subsurface-redoubt',
       title: 'Redoubt Subsurface Validation',
-      subtitle: 'Minimal connectivity with stringent rejection of stale authority.',
+      subtitle: 'Minimal connectivity with stale authority rejection.',
       environment,
       tags: ['Latency', 'Stale Inputs', 'Fail-secure'],
-      doctrine: 'Local safe-return policy when trust continuity is interrupted.',
+      doctrine: 'Use local safe-return when trust continuity breaks.',
     },
     'mesh-relay': scenarioCatalog[0]!,
   };

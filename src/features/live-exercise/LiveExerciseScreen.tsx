@@ -1,4 +1,3 @@
-import { ControlPanel } from '../../components/ControlPanel';
 import { ScenarioCanvas } from '../../components/ScenarioCanvas';
 import { TimelineScrubber } from '../../components/TimelineScrubber';
 import { SectionHeader } from '../../components/SectionHeader';
@@ -44,7 +43,7 @@ export function LiveExerciseScreen({
       <SectionHeader
         eyebrow="Live Exercise"
         title="Interactive contested-spectrum simulation"
-        description="This screen drives the runtime. Starting, pausing, stepping, phase shifting, and attack injection all modify the same session state used by the overview, lineage, guardrails, and evidence views."
+        description="Start, pause, step, and inject attacks to change the shared session."
         tag={state.session.phase}
         icon={<Radar size={14} strokeWidth={2.2} className="text-[#4f8cff]" />}
       />
@@ -60,67 +59,25 @@ export function LiveExerciseScreen({
             sessionPhase={state.session.phase}
             alertCount={state.summary.alertCount}
           />
-          <Card className="space-y-4">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="inline-flex h-7 w-7 items-center justify-center rounded-[4px] border border-[#2358ca]/35 bg-[#102247] text-[#4f8cff]">
-                    <Activity size={13} strokeWidth={2.2} className="text-[#4f8cff]" />
-                  </span>
-                  <div className="micro-label">Session controls</div>
-                </div>
-                <div className="text-base font-semibold text-white">Operator actions affect the same runtime</div>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <Button variant="default" onClick={onStart}><Activity size={15} className="text-[#4f8cff]" />Start</Button>
-                <Button variant="outline" onClick={onConnect}><ShieldAlert size={15} className="text-[#4f8cff]" />Connect</Button>
-                <Button variant="ghost" onClick={onPause}><Clock3 size={15} className="text-[#4f8cff]" />Pause</Button>
-                <Button variant="ghost" onClick={onResume}><Clock3 size={15} className="text-[#4f8cff]" />Resume</Button>
-                <Button variant="outline" onClick={onStep}><Clock3 size={15} className="text-[#4f8cff]" />Step</Button>
-                <Button variant="amber" onClick={onInjectAttack}><Radar size={15} className="text-[#4f8cff]" />Inject attack</Button>
-              </div>
-            </div>
-            <div className="grid gap-3 md:grid-cols-3">
-              <MetricTile label="Confidence" value={formatPercent(state.confidence)} tone={state.confidence > 74 ? 'trust' : state.confidence > 48 ? 'amber' : 'hostile'} icon={<Gauge size={13} className="text-[#4f8cff]" />} />
-              <MetricTile label="Threat pressure" value={`${Math.round(state.threatPressure)}`} tone={state.threatPressure > 60 ? 'hostile' : state.threatPressure > 32 ? 'amber' : 'trust'} icon={<ShieldAlert size={13} className="text-[#4f8cff]" />} />
-              <MetricTile label="Connection" value={state.connectionState} tone={state.connectionState === 'connected' ? 'trust' : state.connectionState === 'degraded' ? 'amber' : 'hostile'} icon={<Activity size={13} className="text-[#4f8cff]" />} />
-            </div>
-          </Card>
         </div>
 
         <Card className="space-y-4">
-          <div className="flex items-center gap-2">
-            <span className="inline-flex h-7 w-7 items-center justify-center rounded-[4px] border border-[#2358ca]/35 bg-[#102247] text-[#4f8cff]">
-              <Workflow size={13} strokeWidth={2.2} className="text-[#4f8cff]" />
-            </span>
-            <div className="micro-label">Outcome matrix</div>
-          </div>
-          <div className="grid gap-3">
-            {[
-              ['Authentication', state.metrics.verifiedCommandRate],
-              ['Command continuity', state.metrics.integrityContinuity],
-              ['Guardrail integrity', state.metrics.guardrailLock === 'locked' ? 96 : 88],
-              ['Operator trust', state.confidence],
-              ['Recovery path', state.phase === 'recovery' ? 92 : 61],
-              ['Mission survivability', state.mode === 'Fail-secure' ? 88 : 76],
-            ].map(([label, value]) => (
-              <div key={label as string} className="rounded-xl border border-white/6 bg-black/20 p-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-300">{label as string}</span>
-                  <span className="text-sm font-semibold text-white">{formatPercent(Number(value))}</span>
-                </div>
-                <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/6">
-                  <div className="h-full rounded-full bg-gradient-to-r from-amber-500 to-trust" style={{ width: `${Number(value)}%` }} />
-                </div>
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="inline-flex h-7 w-7 items-center justify-center rounded-[4px] border border-[#2358ca]/35 bg-[#102247] text-[#4f8cff]">
+                  <Workflow size={13} strokeWidth={2.2} className="text-[#4f8cff]" />
+                </span>
+                <div className="micro-label">Live state</div>
               </div>
-            ))}
-          </div>
-          <div className="rounded-xl border border-white/6 bg-white/3 p-3">
-            <div className="micro-label">Current mode</div>
-            <div className="mt-2 flex items-center gap-2">
-              <Badge tone={state.mode === 'Fail-secure' ? 'danger' : state.mode === 'Recovery' ? 'amber' : 'success'}>{state.mode}</Badge>
-              <span className="text-sm text-slate-400">Phase {state.phase.replace('-', ' ')}</span>
+              <div className="text-base font-semibold text-white">{state.mode}</div>
             </div>
+            <Badge tone={state.summary.alertCount > 0 ? 'warn' : 'success'}>{state.summary.alertCount} alerts</Badge>
+          </div>
+          <div className="grid gap-2">
+            <MetricTile label="Confidence" value={formatPercent(state.confidence)} tone={state.confidence > 74 ? 'trust' : state.confidence > 48 ? 'amber' : 'hostile'} icon={<Gauge size={13} className="text-[#4f8cff]" />} />
+            <MetricTile label="Threat pressure" value={`${Math.round(state.threatPressure)}`} tone={state.threatPressure > 60 ? 'hostile' : state.threatPressure > 32 ? 'amber' : 'trust'} icon={<ShieldAlert size={13} className="text-[#4f8cff]" />} />
+            <MetricTile label="Connection" value={state.connectionState} tone={state.connectionState === 'connected' ? 'trust' : state.connectionState === 'degraded' ? 'amber' : 'hostile'} icon={<Activity size={13} className="text-[#4f8cff]" />} />
           </div>
           <div className="rounded-xl border border-white/6 bg-black/20 p-3">
             <div className="micro-label">Selected node</div>
@@ -132,29 +89,26 @@ export function LiveExerciseScreen({
                 </div>
               </div>
             ) : (
-              <div className="mt-2 text-sm text-slate-400">Click any node in the canvas to inspect it here.</div>
+              <div className="mt-2 text-sm text-slate-400">Click a node to inspect it here.</div>
             )}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="default" onClick={onStart}><Activity size={15} className="text-[#4f8cff]" />Start</Button>
+            <Button variant="outline" onClick={onConnect}><ShieldAlert size={15} className="text-[#4f8cff]" />Connect</Button>
+            <Button variant="ghost" onClick={onPause}><Clock3 size={15} className="text-[#4f8cff]" />Pause</Button>
+            <Button variant="ghost" onClick={onResume}><Clock3 size={15} className="text-[#4f8cff]" />Resume</Button>
+            <Button variant="outline" onClick={onStep}><Clock3 size={15} className="text-[#4f8cff]" />Step</Button>
+            <Button variant="amber" onClick={onInjectAttack}><Radar size={15} className="text-[#4f8cff]" />Inject</Button>
           </div>
         </Card>
       </div>
-
-      <ControlPanel
-        active={state.attackTypes}
-        onToggle={onToggleAttack}
-        onLaunch={onInjectAttack}
-        intensity={state.attackIntensity}
-        persistence={state.attackPersistence}
-        coordination={state.attackCoordination}
-        stealth={state.attackStealth}
-        onChange={onChangeAttackParam}
-      />
 
       <div className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
         <Card className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
               <div className="micro-label">Streaming response</div>
-              <div className="text-base font-semibold text-white">Live effect of the current attack profile</div>
+              <div className="text-base font-semibold text-white">Live attack effect</div>
             </div>
             <Badge tone={state.summary.alertCount > 0 ? 'warn' : 'success'}>{state.summary.alertCount} alerts</Badge>
           </div>
@@ -172,7 +126,7 @@ export function LiveExerciseScreen({
                 </span>
                 <div className="micro-label">Timeline</div>
               </div>
-              <div className="text-base font-semibold text-white">Recent session events</div>
+              <div className="text-base font-semibold text-white">Recent events</div>
             </div>
             <Button variant="outline" onClick={onStep}><Clock3 size={15} className="text-[#4f8cff]" />Advance</Button>
           </div>

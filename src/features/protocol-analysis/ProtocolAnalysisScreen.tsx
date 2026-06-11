@@ -35,7 +35,7 @@ export function ProtocolAnalysisScreen({
       <SectionHeader
         eyebrow="Protocol analysis"
         title="Comparison console under current attack profile"
-        description="Filter, compare, and inspect why one protocol performs better or worse while the session remains live."
+        description="Filter and compare protocols under the current attack profile."
         tag={comparisonMode ? 'comparison' : 'single view'}
         icon={<Database size={14} strokeWidth={2.2} className="text-[#4f8cff]" />}
       />
@@ -109,8 +109,8 @@ export function ProtocolAnalysisScreen({
             <div className="micro-label">Why it behaves this way</div>
             <div className="mt-2 text-sm leading-6 text-slate-300">
               {selectedProtocol === 'DQSP / Lineage'
-                ? 'DQSP / Lineage keeps authority continuity high because the ledger remains locally verifiable even when the current link is contested.'
-                : 'This protocol is more exposed to handshake dependence and wrong acceptance under the current attack profile.'}
+                ? 'DQSP / Lineage keeps continuity high because the ledger stays locally verifiable.'
+                : 'This protocol is more exposed to handshake dependence and wrong acceptance.'}
             </div>
           </div>
           <div className="rounded-xl border border-white/6 bg-black/20 p-3">
@@ -124,12 +124,6 @@ export function ProtocolAnalysisScreen({
         </Card>
       </div>
 
-      <Card className="space-y-3">
-        <div className="micro-label">Comparison note</div>
-        <p className="text-sm leading-6 text-slate-300">
-          The comparison is conservative by design. DQSP / Lineage wins on authority continuity and recovery behavior, but the current session still records the same hostile pressure, the same alerts, and the same evidence chain.
-        </p>
-      </Card>
     </div>
   );
 }

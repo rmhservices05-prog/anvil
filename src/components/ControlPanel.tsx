@@ -39,7 +39,7 @@ export function ControlPanel({
             </span>
             <div className="micro-label">Attack controls</div>
           </div>
-          <div className="text-base font-semibold text-white">Composite AI-generated attack composition</div>
+          <div className="text-base font-semibold text-white">Attack profile builder</div>
         </div>
         <Badge tone="danger">{active.length} active</Badge>
       </div>

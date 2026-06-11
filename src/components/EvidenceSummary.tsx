@@ -13,7 +13,7 @@ export function EvidenceSummary({ state, onExport }: { state: SimulationState; o
             </span>
             <div className="micro-label">Evidence pack</div>
           </div>
-          <div className="text-base font-semibold text-white">Export-ready summary for stakeholders and operators</div>
+          <div className="text-base font-semibold text-white">Compact export summary</div>
         </div>
         <Badge tone={state.exportStatus === 'success' ? 'success' : 'amber'}>{state.exportStatus === 'success' ? 'Exported' : 'Ready'}</Badge>
       </div>
@@ -30,7 +30,7 @@ export function EvidenceSummary({ state, onExport }: { state: SimulationState; o
       <div className="rounded-xl border border-white/6 bg-black/20 p-4">
         <div className="micro-label">Operator notes</div>
         <p className="mt-2 text-sm leading-6 text-slate-300">
-          The artifact is generated locally from the current runtime. It contains the session timeline, alert states, metrics, and selected detail so the export can be replayed later without backend dependencies.
+          The artifact is generated locally from the current runtime. It includes the timeline, alerts, metrics, and selected detail.
         </p>
       </div>
       <div className="flex flex-wrap items-center gap-3">

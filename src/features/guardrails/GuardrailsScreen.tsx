@@ -17,7 +17,7 @@ export function GuardrailsScreen({
       <SectionHeader
         eyebrow="Guardrails"
         title="Live policy surface"
-        description="Violations, recovery transitions, acknowledgements, and retained assertions all remain visible as the session changes."
+        description="Watch violations, recovery, and acknowledgements in one place."
         tag={state.metrics.guardrailLock}
         icon={<Shield size={14} strokeWidth={2.2} className="text-[#4f8cff]" />}
       />
@@ -35,7 +35,7 @@ export function GuardrailsScreen({
             <Badge tone={state.trustState === 'fail-secure' ? 'danger' : state.trustState === 'recovery' ? 'amber' : 'success'}>{state.trustState}</Badge>
           </div>
           <div className="text-sm leading-6 text-slate-300">
-            Guardrails stay retained locally. When trust continuity weakens, the system rejects stale or rewritten authority instead of silently failing open.
+            Guardrails stay local. When trust drops, stale or rewritten authority is rejected.
           </div>
           <div className="space-y-2">
             {state.guardrails.map((item) => (
@@ -81,15 +81,6 @@ export function GuardrailsScreen({
                 <div className="mt-2 text-sm leading-6 text-slate-300">{alert.message}</div>
               </div>
             ))}
-          </div>
-
-          <div className="rounded-xl border border-white/6 bg-black/20 p-3">
-            <div className="micro-label">Why the guardrail is locked, retained, or degraded</div>
-            <div className="mt-2 space-y-1 text-sm leading-6 text-slate-300">
-              <div>Locked: the runtime has detected a non-negotiable safety condition.</div>
-              <div>Retained: the last verified policy is still binding and reusable.</div>
-              <div>Degraded: the session is running, but trust continuity has fallen below the normal operating band.</div>
-            </div>
           </div>
 
           <div className="space-y-2">

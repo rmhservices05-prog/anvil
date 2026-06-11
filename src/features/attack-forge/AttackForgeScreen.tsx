@@ -18,22 +18,12 @@ export function AttackForgeScreen({
   onInject: () => void;
   onSelectEvent: (id: string) => void;
 }) {
-  const activeChain = state.attackTypes.map((attack) => attackPresets.find((preset) => preset.id === attack)).filter(Boolean);
-  const profile = [
-    ['Doctrine', 'Adaptive mixed attack'],
-    ['Target preference', 'Authority continuity and fallback pathways'],
-    ['Adaptation rate', `${Math.max(1, Math.round(state.threatPressure / 12))}/5`],
-    ['Deception bias', `${Math.round(state.attackStealth)}%`],
-    ['Aggressiveness', `${Math.round(state.attackIntensity)}%`],
-    ['Persistence', `${Math.round(state.attackPersistence)}%`],
-  ] as const;
-
   return (
     <div className="space-y-6">
       <SectionHeader
         eyebrow="Attack Forge"
         title="Adversarial simulation workbench"
-        description="Build a hostile profile, inject it into the live session, and observe how the same runtime responds in the overview, lineage, guardrail, and evidence views."
+        description="Build an attack profile and inject it into the live session."
         tag="Workbench"
         icon={<ShieldAlert size={14} strokeWidth={2.2} className="text-[#4f8cff]" />}
       />
@@ -70,6 +60,15 @@ export function AttackForgeScreen({
               );
             })}
           </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <Button variant="danger" onClick={onInject}>
+              Inject into session
+            </Button>
+          </div>
+        </Card>
+
+        <Card className="space-y-4">
+          <div className="micro-label">Attack settings</div>
           <ControlPanel
             active={state.attackTypes}
             onToggle={onToggleAttack}
@@ -80,57 +79,8 @@ export function AttackForgeScreen({
             stealth={state.attackStealth}
             onChange={onChangeAttackParam}
           />
-          <div className="flex flex-wrap items-center gap-3">
-            <Button variant="danger" onClick={onInject}>
-              Inject into session
-            </Button>
-            <Badge tone="amber">Consequences flow into all screens</Badge>
-          </div>
-        </Card>
-
-        <Card className="space-y-4">
-          <div className="micro-label">Active chain summary</div>
           <div className="space-y-2">
-            {activeChain.length ? (
-              activeChain.map((attack) => (
-                <div key={attack!.id} className="rounded-xl border border-white/6 bg-black/20 p-3">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="text-sm font-medium text-white">{attack!.label}</div>
-                    <Badge tone="danger">{attack!.intent}</Badge>
-                  </div>
-                  <div className="mt-2 text-xs leading-5 text-slate-400">{attack!.description}</div>
-                </div>
-              ))
-            ) : (
-              <div className="rounded-xl border border-white/6 bg-black/20 p-3 text-sm text-slate-400">
-                No attack primitives armed. Select one or more vectors to shape the next injection.
-              </div>
-            )}
-          </div>
-          <div className="rounded-xl border border-hostile/20 bg-hostile/8 p-4">
-            <div className="micro-label text-hostile/90">Expected runtime effect</div>
-            <div className="mt-2 text-sm leading-6 text-slate-200">
-              Current pressure is driving threat up to {Math.round(state.threatPressure)} and reducing operator confidence to {Math.round(state.confidence)}. Injection will publish the change into timeline, alerts, and evidence.
-            </div>
-          </div>
-          <div className="space-y-3">
-            {profile.map(([label, value]) => (
-              <div key={label} className="rounded-xl border border-white/6 bg-black/20 p-3">
-                <div className="text-xs uppercase tracking-[0.2em] text-slate-500">{label}</div>
-                <div className="mt-2 text-sm font-semibold text-white">{value}</div>
-              </div>
-            ))}
-          </div>
-          <div className="rounded-xl border border-white/6 bg-black/20 p-3">
-            <div className="micro-label">Attack influence</div>
-            <div className="mt-2 space-y-1 text-sm text-slate-300">
-              <div>Overview: higher threat pressure and more alerts.</div>
-              <div>Lineage: more rejected or recovery branches.</div>
-              <div>Evidence: new alert and timeline items are captured on export.</div>
-            </div>
-          </div>
-          <div className="space-y-2">
-            <div className="micro-label">Recent session events</div>
+            <div className="micro-label">Recent events</div>
             <div className="space-y-2">
               {state.timeline.slice(-3).reverse().map((entry) => (
                 <button

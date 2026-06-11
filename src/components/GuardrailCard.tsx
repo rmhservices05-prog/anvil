@@ -13,7 +13,7 @@ export function GuardrailCard({ guardrails }: { guardrails: GuardrailItem[] }) {
             </span>
             <div className="micro-label">Guardrail state</div>
           </div>
-          <div className="text-base font-semibold text-white">Last verified guardrails retained</div>
+          <div className="text-base font-semibold text-white">Retained guardrails</div>
         </div>
         <Badge tone="success">Retained</Badge>
       </div>
