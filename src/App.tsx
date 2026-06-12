@@ -1,14 +1,11 @@
 import {
   Activity,
   Clock3,
-  Download,
-  Eye,
   Gauge,
   Lock,
   Pause,
   Play,
   RotateCcw,
-  Shield,
   ShieldAlert,
   Workflow,
 } from 'lucide-react';
@@ -17,14 +14,10 @@ import { useAnvilSimulation } from './hooks/useAnvilSimulation';
 import { Badge, Button, Card, Drawer } from './components/ui';
 import { cn } from './lib/utils';
 import { formatPercent, formatSeconds } from './lib/seed';
-import { OverviewScreen } from './features/overview/OverviewScreen';
 import { LiveExerciseScreen } from './features/live-exercise/LiveExerciseScreen';
 import { AttackForgeScreen } from './features/attack-forge/AttackForgeScreen';
-import { LineageScreen } from './features/lineage/LineageScreen';
-import { GuardrailsScreen } from './features/guardrails/GuardrailsScreen';
 import { ProtocolAnalysisScreen } from './features/protocol-analysis/ProtocolAnalysisScreen';
-import { EvidencePackScreen } from './features/evidence-pack/EvidencePackScreen';
-import type { SelectedDetail, SimulationState } from './types';
+import type { ScreenId, SelectedDetail, SimulationState } from './types';
 
 export default function App() {
   const { state, dispatch } = useAnvilSimulation();
@@ -34,13 +27,19 @@ export default function App() {
   const activeStep = state.workflow.find((step) => step.status === 'active') ?? state.workflow[0];
   const selectedDetail = state.selectedDetail ?? state.layout.selectedDetail;
   const selectedArtifact = useMemo(() => getFocusedArtifact(state, selectedDetail), [state, selectedDetail]);
-  const overviewFocusSummary = {
-    scenario: state.scenario.title,
-    environment: state.environment.replace('-', ' / '),
-    epoch: state.metrics.lastVerifiedEpoch,
-    workflow: activeStep?.label ?? 'Unknown',
+  const screenIcon = (screen: ScreenId, status?: 'active' | 'complete' | 'queued') => {
+    const iconClass = status === 'active' ? 'text-[#f3f3f3]' : status === 'complete' ? 'text-[#4f8cff]' : 'text-[#6e86bb]';
+    switch (screen) {
+      case 'live':
+        return <Play size={13} strokeWidth={2.3} className={iconClass} />;
+      case 'attack':
+        return <ShieldAlert size={13} strokeWidth={2.3} className={iconClass} />;
+      case 'analysis':
+        return <Gauge size={13} strokeWidth={2.3} className={iconClass} />;
+      default:
+        return <Workflow size={13} strokeWidth={2.3} className={iconClass} />;
+    }
   };
-
   useEffect(() => {
     if (!pendingExportDownload.current || state.exportStatus !== 'success' || !state.exportPayload) return;
     pendingExportDownload.current = false;
@@ -53,11 +52,6 @@ export default function App() {
     window.URL.revokeObjectURL(url);
   }, [state.exportPayload, state.exportStatus, state.session.id]);
 
-  const requestExport = () => {
-    pendingExportDownload.current = true;
-    dispatch({ type: 'export-evidence' });
-  };
-
   const closeDetail = () => {
     dispatch({
       type: 'set-panel-layout',
@@ -65,66 +59,92 @@ export default function App() {
     });
   };
 
-  const screenContent = renderScreenContent(state, dispatch, requestExport, overviewFocusSummary);
+  const screenContent = renderScreenContent(state, dispatch);
 
   return (
     <div className="app-shell min-h-screen bg-[#070707] text-[#d6d6d6]">
-      <div className="grid min-h-screen grid-cols-1 lg:grid-cols-[300px_minmax(0,1fr)]">
+      <div
+        className={cn(
+          'grid min-h-screen grid-cols-1',
+          sidebarCollapsed ? 'lg:grid-cols-[76px_minmax(0,1fr)]' : 'lg:grid-cols-[240px_minmax(0,1fr)]',
+        )}
+      >
         <aside
           className={cn(
-            'flex flex-col border-b border-white/[0.07] bg-[#090909] lg:sticky lg:top-0 lg:h-screen lg:border-b-0 lg:border-r',
-            sidebarCollapsed ? 'lg:w-[88px]' : 'lg:w-[300px]',
+            'flex w-full flex-col border-b border-white/[0.07] bg-[#090909] lg:sticky lg:top-0 lg:h-screen lg:border-b-0 lg:border-r',
           )}
         >
           <div className={cn('border-b border-white/[0.06] py-4', sidebarCollapsed ? 'px-3' : 'px-4')}>
-            <div className={cn('flex items-center gap-3', sidebarCollapsed ? 'justify-center' : 'justify-between')}>
-              {!sidebarCollapsed ? (
-                <div>
-                  <div className="text-[13px] font-semibold tracking-normal text-[#f3f3f3]">ANVIL</div>
-                  <div className="text-[10px] uppercase tracking-[0.16em] text-[#626262]">Ground / Air console</div>
-                </div>
-              ) : null}
-              <Button
-                variant="ghost"
+            <div className={cn('flex items-center', sidebarCollapsed ? 'justify-center' : 'justify-center')}>
+              <button
+                type="button"
                 onClick={() => dispatch({ type: 'toggle-sidebar' })}
                 aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-                className="h-8 w-8 p-0"
+                className={cn(
+                  'relative m-0 flex h-8 items-center justify-center overflow-hidden border-0 bg-transparent p-0 shadow-none outline-none ring-0 appearance-none',
+                  'transition-[width,transform,opacity] duration-300 ease-out',
+                  'focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0',
+                  sidebarCollapsed ? 'w-8' : 'w-full',
+                )}
               >
-                <img src="/anvil-logo.png" alt="" aria-hidden="true" className="h-7 w-7 object-contain" />
-              </Button>
+                <img
+                  src="/small-anvil-logo.png"
+                  alt=""
+                  aria-hidden="true"
+                  className={cn(
+                    'absolute inset-0 m-auto block h-7 w-7 object-contain transition-all duration-300 ease-out',
+                    sidebarCollapsed ? 'opacity-100 scale-100' : 'opacity-0 scale-95',
+                  )}
+                />
+                <img
+                  src="/long-logo.png"
+                  alt=""
+                  aria-hidden="true"
+                  className={cn(
+                    'absolute inset-0 m-auto block h-7 w-auto max-w-[180px] object-contain transition-all duration-300 ease-out',
+                    sidebarCollapsed ? 'opacity-0 scale-95' : 'opacity-100 scale-100',
+                  )}
+                />
+              </button>
             </div>
           </div>
 
           <div className={cn('thin-scrollbar flex-1 min-h-0 overflow-y-auto py-4', sidebarCollapsed ? 'px-2' : 'px-4')}>
             {sidebarCollapsed ? (
               <div className="flex h-full flex-col items-center">
-                <div className="flex w-full flex-col items-center gap-3">
-                  <Badge tone={state.mode === 'Fail-secure' ? 'danger' : state.mode === 'Recovery' ? 'amber' : state.mode === 'Contested' ? 'warn' : 'success'}>
-                    {state.mode.slice(0, 3)}
-                  </Badge>
-                  <Badge tone={state.summary.alertCount > 0 ? 'warn' : 'success'}>{state.summary.alertCount}</Badge>
-                </div>
-
-                <div className="mt-auto flex w-full flex-col items-center gap-2 border-t border-white/[0.07] pt-3">
-                  <div className="text-[10px] uppercase tracking-[0.16em] text-[#626262]">{formatSeconds(state.timeElapsed)}</div>
+              <div className="flex w-full flex-col gap-2">
+                  {state.workflow.map((step) => (
+                    <button
+                      key={step.id}
+                      type="button"
+                      onClick={() => dispatch({ type: 'set-screen', screen: step.id })}
+                      aria-label={step.label}
+                      title={step.label}
+                      className={cn(
+                        'flex h-11 w-full items-center justify-center border-0 bg-transparent text-[#6e86bb] transition',
+                        step.status === 'active'
+                          ? 'text-[#f3f3f3]'
+                          : step.status === 'complete'
+                            ? 'hover:bg-white/[0.04] hover:text-[#d6d6d6]'
+                            : 'hover:bg-white/[0.04] hover:text-[#8c8c8c]',
+                      )}
+                    >
+                      {screenIcon(step.id, step.status)}
+                      <span className="sr-only">{step.label}</span>
+                    </button>
+                  ))}
                 </div>
               </div>
             ) : (
               <div className="flex flex-col gap-5">
                 <section className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <span className="inline-flex h-7 w-7 items-center justify-center rounded-[4px] border border-[#2358ca]/35 bg-[#102247] text-[#4f8cff]">
-                      <Workflow size={13} strokeWidth={2.2} className="text-[#4f8cff]" />
-                    </span>
-                    <div className="micro-label">Screens</div>
-                  </div>
                   <div className="space-y-1">
                     {state.workflow.map((step) => (
                       <button
                         key={step.id}
                         onClick={() => dispatch({ type: 'set-screen', screen: step.id })}
                         className={cn(
-                          'flex w-full items-center justify-between gap-3 border px-3 py-2 text-left transition',
+                          'flex w-full items-center gap-3 border px-3 py-2 text-left transition',
                           step.status === 'active'
                             ? 'border-amber-500/30 bg-amber-500/10 text-[#f3f3f3]'
                             : step.status === 'complete'
@@ -132,37 +152,18 @@ export default function App() {
                               : 'border-white/[0.06] bg-[#101010] text-[#8c8c8c] hover:bg-[#151515]',
                         )}
                       >
-                        <div className="min-w-0">
+                        <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-[4px] border border-[#2358ca]/35 bg-[#102247]">
+                          {screenIcon(step.id)}
+                        </span>
+                        <div className="min-w-0 flex-1">
                           <div className="text-[12px] font-medium">{step.label}</div>
                         </div>
-                        <Badge
-                          tone={
-                            step.status === 'active'
-                              ? 'amber'
-                              : step.status === 'complete'
-                                ? 'success'
-                                : 'muted'
-                          }
-                        >
-                          {step.status}
-                        </Badge>
                       </button>
                     ))}
                   </div>
                 </section>
               </div>
             )}
-          </div>
-
-          <div className={cn('border-t border-white/[0.07] py-3', sidebarCollapsed ? 'px-3' : 'px-4')}>
-            <div className="flex items-center justify-between text-[10px] uppercase tracking-[0.16em] text-[#626262]">
-              <span>{sidebarCollapsed ? 'Run' : 'Runtime'}</span>
-              <span>{sidebarCollapsed ? state.metrics.lastVerifiedEpoch.slice(0, 2) : state.metrics.lastVerifiedEpoch}</span>
-            </div>
-            <div className="mt-2 flex items-center gap-2 text-[11px] text-[#8c8c8c]">
-              <Lock size={12} className="text-[#4f8cff]" />
-              {sidebarCollapsed ? state.metrics.guardrailLock : `${state.metrics.guardrailLock} guardrails, deterministic local simulation`}
-            </div>
           </div>
         </aside>
 
@@ -199,79 +200,16 @@ export default function App() {
                 </div>
               </div>
 
-              <Card className="space-y-4 bg-[#111111]">
-                <div className="flex items-start justify-between gap-3 border-b border-white/[0.06] pb-3">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="inline-flex h-7 w-7 items-center justify-center rounded-[4px] border border-[#2358ca]/35 bg-[#102247] text-[#4f8cff]">
-                        <Shield size={13} strokeWidth={2.2} className="text-[#4f8cff]" />
-                      </span>
-                      <div className="micro-label">Mission frame</div>
-                    </div>
-                    <div className="mt-1 text-[13px] font-medium text-[#f3f3f3]">{state.scenario.title}</div>
-                    <div className="mt-1 max-w-3xl text-[11px] leading-5 text-[#8c8c8c]">{state.scenario.subtitle}</div>
-                  </div>
-                  <Badge tone={state.mode === 'Fail-secure' ? 'danger' : state.mode === 'Recovery' ? 'amber' : state.mode === 'Contested' ? 'warn' : 'success'}>
-                    {state.mode}
-                  </Badge>
-                </div>
-                <div className="grid gap-2 md:grid-cols-4">
-                  <MetricPill label="Phase" value={state.session.phase} tone={phaseTone(state.session.phase)} icon={<Clock3 size={11} strokeWidth={2.2} className="text-[#4f8cff]" />} />
-                  <MetricPill label="Connection" value={state.connectionState} tone={connectionTone(state.connectionState)} icon={<Activity size={11} strokeWidth={2.2} className="text-[#4f8cff]" />} />
-                  <MetricPill label="Threat" value={`${Math.round(state.threatPressure)}`} tone={state.threatPressure > 60 ? 'hostile' : state.threatPressure > 32 ? 'amber' : 'trust'} icon={<ShieldAlert size={11} strokeWidth={2.2} className="text-[#4f8cff]" />} />
-                  <MetricPill label="Confidence" value={formatPercent(state.confidence)} tone={state.confidence > 74 ? 'trust' : state.confidence > 48 ? 'amber' : 'hostile'} icon={<Gauge size={11} strokeWidth={2.2} className="text-[#4f8cff]" />} />
-                </div>
-              </Card>
+              <div className="grid gap-2 md:grid-cols-4">
+                <MetricPill label="Phase" value={state.session.phase} tone={phaseTone(state.session.phase)} icon={<Clock3 size={11} strokeWidth={2.2} className="text-[#4f8cff]" />} />
+                <MetricPill label="Connection" value={state.connectionState} tone={connectionTone(state.connectionState)} icon={<Activity size={11} strokeWidth={2.2} className="text-[#4f8cff]" />} />
+                <MetricPill label="Threat" value={`${Math.round(state.threatPressure)}`} tone={state.threatPressure > 60 ? 'hostile' : state.threatPressure > 32 ? 'amber' : 'trust'} icon={<ShieldAlert size={11} strokeWidth={2.2} className="text-[#4f8cff]" />} />
+                <MetricPill label="Confidence" value={formatPercent(state.confidence)} tone={state.confidence > 74 ? 'trust' : state.confidence > 48 ? 'amber' : 'hostile'} icon={<Gauge size={11} strokeWidth={2.2} className="text-[#4f8cff]" />} />
+              </div>
             </div>
           </header>
 
-          <div className="space-y-5 p-4 lg:p-5">
-            <section className="grid gap-3 xl:grid-cols-[1.25fr_0.75fr]">
-              <Card className="space-y-4 bg-[#111111]">
-                <div className="flex items-center justify-between gap-3 border-b border-white/[0.06] pb-3">
-                  <div>
-                    <div className="micro-label">What changed</div>
-                    <div className="text-[13px] font-medium text-[#f3f3f3]">
-                      Derived from the current phase, attack mix, and trust posture
-                    </div>
-                  </div>
-                  <Badge tone={state.summary.alertCount > 0 ? 'warn' : 'amber'}>
-                    {state.summary.alertCount > 0 ? 'Operator attention' : 'Monitoring'}
-                  </Badge>
-                </div>
-                <div className="grid gap-3 md:grid-cols-3">
-                  {state.briefing.map((item) => (
-                    <div key={item.label} className="border border-white/[0.07] bg-[#151515] p-3">
-                      <div className="micro-label">{item.label}</div>
-                      <div className="mt-2 flex items-baseline justify-between gap-2">
-                        <div className="font-mono text-[20px] leading-none text-[#f3f3f3]">{item.value}</div>
-                        <Badge tone={item.tone === 'trust' ? 'success' : item.tone === 'amber' ? 'warn' : 'danger'}>{item.tone}</Badge>
-                      </div>
-                      <div className="mt-2 text-[11px] leading-5 text-[#8c8c8c]">{item.detail}</div>
-                    </div>
-                  ))}
-                </div>
-              </Card>
-
-              <Card className="space-y-4 bg-[#111111]">
-                <div className="flex items-center justify-between gap-3 border-b border-white/[0.06] pb-3">
-                  <div>
-                    <div className="micro-label">Focus</div>
-                    <div className="text-[13px] font-medium text-[#f3f3f3]">Operator selection and runtime state</div>
-                  </div>
-                  <Badge tone={selectedDetail ? 'success' : 'muted'}>{selectedDetail ? 'selected' : 'idle'}</Badge>
-                </div>
-                <div className="space-y-3">
-                  <FocusRow label="Scenario" value={state.scenario.title} />
-                  <FocusRow label="Environment" value={state.environment.replace('-', ' / ')} />
-                  <FocusRow label="Current epoch" value={state.metrics.lastVerifiedEpoch} />
-                  <FocusRow label="Workflow stage" value={activeStep?.label ?? 'Unknown'} />
-                </div>
-              </Card>
-            </section>
-
-            {screenContent}
-          </div>
+          <div className="space-y-5 p-4 lg:p-5">{screenContent}</div>
         </main>
       </div>
 
@@ -290,35 +228,8 @@ export default function App() {
   );
 }
 
-function renderScreenContent(
-  state: SimulationState,
-  dispatch: ReturnType<typeof useAnvilSimulation>['dispatch'],
-  onExport: () => void,
-  overviewFocusSummary: {
-    scenario: string;
-    environment: string;
-    epoch: string;
-    workflow: string;
-  },
-) {
+function renderScreenContent(state: SimulationState, dispatch: ReturnType<typeof useAnvilSimulation>['dispatch']) {
   switch (state.screen) {
-    case 'overview':
-      return (
-        <OverviewScreen
-          state={state}
-          onSelectEvent={(id) => dispatch({ type: 'select-event', id })}
-          onSelectEvidence={(id) => dispatch({ type: 'select-evidence', id })}
-          focusSummary={overviewFocusSummary}
-          onStart={() => dispatch({ type: 'start-session' })}
-          onConnect={() => dispatch({ type: 'connect' })}
-          onPause={() => dispatch({ type: 'pause' })}
-          onResume={() => dispatch({ type: 'resume' })}
-          onStep={() => dispatch({ type: 'step' })}
-          onToggleReview={() => dispatch({ type: 'set-review-mode', reviewMode: !state.reviewMode })}
-          onExport={onExport}
-          onReset={() => dispatch({ type: 'reset' })}
-        />
-      );
     case 'live':
       return (
         <LiveExerciseScreen
@@ -346,22 +257,6 @@ function renderScreenContent(
           onSelectEvent={(id) => dispatch({ type: 'select-event', id })}
         />
       );
-    case 'lineage':
-      return (
-        <LineageScreen
-          state={state}
-          onSelect={(branch) => dispatch({ type: 'select-branch', id: branch.id })}
-          onFilter={(status) => dispatch({ type: 'set-panel-layout', layout: { filters: { ...state.layout.filters, lineage: status } } })}
-        />
-      );
-    case 'guardrails':
-      return (
-        <GuardrailsScreen
-          state={state}
-          onAcknowledge={(id) => dispatch({ type: 'acknowledge-alert', id })}
-          onSelectEvent={(id) => dispatch({ type: 'select-event', id })}
-        />
-      );
     case 'analysis':
       return (
         <ProtocolAnalysisScreen
@@ -377,29 +272,14 @@ function renderScreenContent(
           }
         />
       );
-    case 'evidence':
-      return (
-        <EvidencePackScreen
-          state={state}
-          onExport={onExport}
-          onSelectEvidence={(id) => dispatch({ type: 'select-evidence', id })}
-        />
-      );
     default:
       return (
-        <OverviewScreen
+        <AttackForgeScreen
           state={state}
+          onToggleAttack={(attack) => dispatch({ type: 'toggle-attack', attack })}
+          onChangeAttackParam={(key, value) => dispatch({ type: 'set-attack-param', key, value })}
           onSelectEvent={(id) => dispatch({ type: 'select-event', id })}
-          onSelectEvidence={(id) => dispatch({ type: 'select-evidence', id })}
-          focusSummary={overviewFocusSummary}
-          onStart={() => dispatch({ type: 'start-session' })}
-          onConnect={() => dispatch({ type: 'connect' })}
-          onPause={() => dispatch({ type: 'pause' })}
-          onResume={() => dispatch({ type: 'resume' })}
-          onStep={() => dispatch({ type: 'step' })}
-          onToggleReview={() => dispatch({ type: 'set-review-mode', reviewMode: !state.reviewMode })}
-          onExport={onExport}
-          onReset={() => dispatch({ type: 'reset' })}
+          onInject={() => dispatch({ type: 'inject-attack' })}
         />
       );
   }

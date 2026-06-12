@@ -89,21 +89,21 @@ export interface SessionAction {
 }
 
 const persistenceKey = 'anvil.console.session.v2';
-const activeScreenOrder: ScreenId[] = ['overview', 'live', 'attack', 'lineage', 'guardrails', 'analysis', 'evidence'];
+const activeScreenOrder: ScreenId[] = ['attack', 'live', 'analysis'];
 const screenMeta: Record<ScreenId, { label: string; detail: string }> = {
-  overview: { label: 'Overview', detail: 'Mission health, authority continuity, and trend summary.' },
-  live: { label: 'Live exercise', detail: 'Phase control, attack injection, and reactive telemetry.' },
-  attack: { label: 'Attack forge', detail: 'Composable adversary recipes and pressure shaping.' },
+  overview: { label: 'Overview', detail: 'Legacy landing page retained for old sessions.' },
+  attack: { label: 'Forge attack', detail: 'Prepare the adversary profile before the live run.' },
+  live: { label: 'Live exercise', detail: 'Play the forged attack through the contested session.' },
   lineage: { label: 'Lineage inspection', detail: 'Epoch continuity, rejection, and recovery branches.' },
   guardrails: { label: 'Guardrails', detail: 'Fail-secure mission rules and retained policy state.' },
-  analysis: { label: 'Protocol analysis', detail: 'Operational protocol comparison under mixed attack.' },
+  analysis: { label: 'Comparison', detail: 'Compare how different solutions respond to the attack.' },
   evidence: { label: 'Evidence export', detail: 'Package the scenario, outcomes, and audit trail.' },
 };
 
 export function createInitialState(): SimulationState {
   const scenario = scenarioForEnvironment('ground-air');
   const base: SimulationState = {
-    screen: 'overview',
+    screen: 'live',
     session: {
       id: 'session-ground-air-001',
       phase: 'idle',
@@ -170,7 +170,7 @@ export function createInitialState(): SimulationState {
     },
     layout: {
       sidebarCollapsed: false,
-      activeScreen: 'overview',
+      activeScreen: 'live',
       filters: {},
       dockedPanels: {
         timeline: true,
@@ -356,8 +356,8 @@ export function reducer(state: SimulationState, action: SessionAction): Simulati
           ...state,
           scenario: nextScenario,
           workspace: { ...state.workspace, selectedScenarioId: nextScenario.id },
-          layout: { ...state.layout, activeScreen: 'overview' },
-          screen: 'overview',
+          layout: { ...state.layout, activeScreen: 'attack' },
+          screen: 'attack',
         },
         197 + nextScenario.id.length,
         false,
@@ -494,6 +494,7 @@ export function reducer(state: SimulationState, action: SessionAction): Simulati
         'attack.injected',
       );
     case 'tick':
+      if (!state.isRunning) return state;
       return recomputeState(
         {
           ...state,

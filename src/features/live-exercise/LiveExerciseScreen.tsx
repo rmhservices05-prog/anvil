@@ -2,9 +2,10 @@ import { ScenarioCanvas } from '../../components/ScenarioCanvas';
 import { TimelineScrubber } from '../../components/TimelineScrubber';
 import { SectionHeader } from '../../components/SectionHeader';
 import { Badge, Button, Card } from '../../components/ui';
+import { cn } from '../../lib/utils';
 import { AttackType, NetworkNode, SimulationState } from '../../types';
 import { formatPercent } from '../../lib/seed';
-import { Activity, Clock3, Gauge, Radar, ShieldAlert, Workflow } from 'lucide-react';
+import { Activity, Clock3, Gauge, Radar, ShieldAlert } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { LineChart, Line, ResponsiveContainer, CartesianGrid, Tooltip, XAxis, YAxis } from 'recharts';
 
@@ -36,14 +37,30 @@ export function LiveExerciseScreen({
   onInjectAttack: () => void;
 }) {
   const selectedNode = state.selectedDetail?.type === 'node' ? state.nodes.find((node) => node.id === state.selectedDetail?.id) : undefined;
-  const liveTimeline = state.timeline.slice(-5).reverse();
+  const liveTimeline = state.timeline.slice(-4).reverse();
+  const livePulseTone =
+    state.connectionState === 'connected'
+      ? 'success'
+      : state.connectionState === 'degraded'
+        ? 'warn'
+        : state.connectionState === 'lost'
+          ? 'danger'
+          : 'amber';
+  const livePulseLabel =
+    state.connectionState === 'connected'
+      ? 'LIVE'
+      : state.connectionState === 'degraded'
+        ? 'RECONNECTING'
+        : state.connectionState === 'lost'
+          ? 'OFFLINE'
+          : 'CONNECTING';
 
   return (
     <div className="space-y-6">
       <SectionHeader
         eyebrow="Live Exercise"
         title="Interactive contested-spectrum simulation"
-        description="Start, pause, step, and inject attacks to change the shared session."
+        description="Take the forged attack from the workbench and play it through the shared session."
         tag={state.session.phase}
         icon={<Radar size={14} strokeWidth={2.2} className="text-[#4f8cff]" />}
       />
@@ -60,16 +77,10 @@ export function LiveExerciseScreen({
             alertCount={state.summary.alertCount}
           />
         </div>
-
         <Card className="space-y-4">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <div className="flex items-center gap-2">
-                <span className="inline-flex h-7 w-7 items-center justify-center rounded-[4px] border border-[#2358ca]/35 bg-[#102247] text-[#4f8cff]">
-                  <Workflow size={13} strokeWidth={2.2} className="text-[#4f8cff]" />
-                </span>
-                <div className="micro-label">Live state</div>
-              </div>
+              <div className="micro-label">Live state</div>
               <div className="text-base font-semibold text-white">{state.mode}</div>
             </div>
             <Badge tone={state.summary.alertCount > 0 ? 'warn' : 'success'}>{state.summary.alertCount} alerts</Badge>
@@ -104,47 +115,80 @@ export function LiveExerciseScreen({
       </div>
 
       <div className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
-        <Card className="space-y-4">
-          <div className="flex items-center justify-between">
+        <Card className="space-y-4 relative overflow-hidden">
+          <div className="pointer-events-none absolute inset-y-0 left-0 w-28 animate-stream-sweep bg-gradient-to-r from-transparent via-white/[0.08] to-transparent" />
+          <div className="flex items-center justify-between gap-3">
             <div>
-              <div className="micro-label">Streaming response</div>
+              <div className="flex items-center gap-2">
+                <div className="micro-label">Streaming response</div>
+                <Badge tone={livePulseTone} className="animate-live-pulse">
+                  <span className="mr-1 inline-flex h-2 w-2 rounded-full bg-current" />
+                  {livePulseLabel}
+                </Badge>
+              </div>
               <div className="text-base font-semibold text-white">Live attack effect</div>
             </div>
-            <Badge tone={state.summary.alertCount > 0 ? 'warn' : 'success'}>{state.summary.alertCount} alerts</Badge>
+            <div className="flex items-center gap-2">
+              <Badge tone={state.summary.alertCount > 0 ? 'warn' : 'success'}>{state.summary.alertCount} alerts</Badge>
+              <Badge tone={state.connectionState === 'connected' ? 'success' : state.connectionState === 'degraded' ? 'warn' : 'danger'}>
+                backend {state.connectionState}
+              </Badge>
+            </div>
           </div>
-          <div className="h-[240px]">
+          <div className="relative h-[240px]">
             <LiveStateChart series={state.series} />
           </div>
         </Card>
 
         <Card className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="inline-flex h-7 w-7 items-center justify-center rounded-[4px] border border-[#2358ca]/35 bg-[#102247] text-[#4f8cff]">
-                  <Clock3 size={13} strokeWidth={2.2} className="text-[#4f8cff]" />
-                </span>
+          <div className="flex items-center justify-between gap-3 border-b border-white/[0.06] pb-4">
+            <div className="flex items-center gap-2">
+              <span className="inline-flex h-7 w-7 items-center justify-center rounded-[4px] border border-[#2358ca]/35 bg-[#102247] text-[#4f8cff]">
+                <Clock3 size={13} strokeWidth={2.2} className="text-[#4f8cff]" />
+              </span>
+              <div>
                 <div className="micro-label">Timeline</div>
+                <div className="text-base font-semibold text-white">Recent events</div>
               </div>
-              <div className="text-base font-semibold text-white">Recent events</div>
             </div>
-            <Button variant="outline" onClick={onStep}><Clock3 size={15} className="text-[#4f8cff]" />Advance</Button>
+            <Button variant="outline" onClick={onStep}>
+              <Clock3 size={15} className="text-[#4f8cff]" />
+              Advance
+            </Button>
           </div>
-          <div className="space-y-2">
-            {liveTimeline.map((entry) => (
-              <button
-                key={entry.id}
-                onClick={() => onSelectEvent(entry.id)}
-                className="w-full rounded-xl border border-white/6 bg-black/20 p-3 text-left transition hover:border-amber-500/30 hover:bg-white/5"
-              >
-                <div className="flex items-center justify-between gap-3">
-                  <div className="text-xs uppercase tracking-[0.16em] text-slate-500">{entry.timestamp}</div>
-                  <Badge tone={entry.severity === 'critical' ? 'danger' : entry.severity === 'warn' ? 'warn' : 'success'}>{entry.type}</Badge>
-                </div>
-                <div className="mt-2 text-sm font-medium text-white">{entry.title}</div>
-                <div className="mt-1 text-xs leading-5 text-slate-400">{entry.details}</div>
-              </button>
-            ))}
+
+          <div className="overflow-hidden rounded-[6px] border border-white/[0.06] bg-black/10">
+            <div className="grid grid-cols-[120px_minmax(0,1.4fr)_120px_minmax(0,2fr)] gap-3 border-b border-white/[0.06] bg-white/[0.02] px-4 py-3 text-[10px] uppercase tracking-[0.18em] text-[#8c8c8c]">
+              <div>Time</div>
+              <div>Event</div>
+              <div>Status</div>
+              <div>Details</div>
+            </div>
+
+            <div className="divide-y divide-white/[0.06]">
+              {liveTimeline.map((entry, index) => (
+                <button
+                  key={entry.id}
+                  onClick={() => onSelectEvent(entry.id)}
+                  className={cn(
+                    'grid w-full grid-cols-[120px_minmax(0,1.4fr)_120px_minmax(0,2fr)] gap-3 px-4 py-4 text-left transition',
+                    index % 2 === 0 ? 'bg-white/[0.01]' : 'bg-transparent',
+                    'hover:bg-white/[0.04]',
+                  )}
+                >
+                  <div className="font-mono text-[12px] tracking-[0.18em] text-[#8c8c8c]">{entry.timestamp}</div>
+                  <div className="min-w-0">
+                    <div className="truncate text-sm font-medium text-[#f3f3f3]">{entry.title}</div>
+                  </div>
+                  <div>
+                    <Badge tone={entry.severity === 'critical' ? 'danger' : entry.severity === 'warn' ? 'warn' : 'success'}>
+                      {entry.type}
+                    </Badge>
+                  </div>
+                  <div className="min-w-0 text-sm leading-6 text-slate-400">{entry.details}</div>
+                </button>
+              ))}
+            </div>
           </div>
         </Card>
       </div>
@@ -160,9 +204,9 @@ function LiveStateChart({ series }: { series: SimulationState['series'] }) {
         <XAxis dataKey="tick" tick={{ fill: '#94a3b8', fontSize: 11 }} axisLine={false} tickLine={false} />
         <YAxis tick={{ fill: '#94a3b8', fontSize: 11 }} axisLine={false} tickLine={false} />
         <Tooltip contentStyle={{ background: '#0b1116', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 16, color: '#e5e7eb' }} />
-        <Line type="monotone" dataKey="recovery" stroke="#4fd0b0" strokeWidth={2.2} dot={false} />
-        <Line type="monotone" dataKey="spoof" stroke="#ff6f61" strokeWidth={2.2} dot={false} />
-        <Line type="monotone" dataKey="jamming" stroke="#f9a93a" strokeWidth={2.2} dot={false} />
+        <Line type="monotone" dataKey="recovery" stroke="#4fd0b0" strokeWidth={2.2} dot={false} isAnimationActive animationDuration={850} />
+        <Line type="monotone" dataKey="spoof" stroke="#ff6f61" strokeWidth={2.2} dot={false} isAnimationActive animationDuration={850} />
+        <Line type="monotone" dataKey="jamming" stroke="#f9a93a" strokeWidth={2.2} dot={false} isAnimationActive animationDuration={850} />
       </LineChart>
     </ResponsiveContainer>
   );

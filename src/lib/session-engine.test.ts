@@ -68,7 +68,7 @@ describe('session engine', () => {
     const mutated = reducer(createInitialState(), { type: 'toggle-attack', attack: 'spoofed-commands' });
     const reset = reducer(mutated, { type: 'reset' });
 
-    expect(reset.screen).toBe('overview');
+    expect(reset.screen).toBe('live');
     expect(reset.attackTypes).toHaveLength(0);
     expect(reset.session.phase).toBe('idle');
     expect(reset.connectionState).toBe('disconnected');
@@ -78,6 +78,6 @@ describe('session engine', () => {
     const switched = reducer(createInitialState(), { type: 'set-scenario', scenarioId: 'eastern-surface' });
     expect(switched.scenario.id).toBe('eastern-surface');
     expect(switched.workspace.selectedScenarioId).toBe('eastern-surface');
-    expect(switched.screen).toBe('overview');
+    expect(switched.screen).toBe('attack');
   });
 });

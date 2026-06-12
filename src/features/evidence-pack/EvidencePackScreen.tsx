@@ -101,7 +101,7 @@ export function EvidencePackScreen({
             </div>
           ) : (
             <div className="rounded-xl border border-white/6 bg-black/20 p-3 text-sm leading-6 text-slate-400">
-              Select an item from the overview or choose one below.
+              Select an item from the session or choose one below.
             </div>
           )}
 

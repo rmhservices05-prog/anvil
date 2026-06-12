@@ -29,13 +29,17 @@ export function ProtocolAnalysisScreen({
     }));
 
   const selectedRow = state.protocolMetrics.find((item) => item.protocol === selectedProtocol) ?? state.protocolMetrics[0]!;
+  const selectProtocolFromBar = (eventData: unknown) => {
+    const protocol = (eventData as { payload?: { protocol?: ProtocolName } } | undefined)?.payload?.protocol;
+    if (protocol) onFilter(protocol);
+  };
 
   return (
     <div className="space-y-6">
       <SectionHeader
-        eyebrow="Protocol analysis"
-        title="Comparison console under current attack profile"
-        description="Filter and compare protocols under the current attack profile."
+        eyebrow="Comparison"
+        title="How different solutions respond to the attack"
+        description="Filter and compare the response profile of each solution under the current attack."
         tag={comparisonMode ? 'comparison' : 'single view'}
         icon={<Database size={14} strokeWidth={2.2} className="text-[#4f8cff]" />}
       />
@@ -86,11 +90,11 @@ export function ProtocolAnalysisScreen({
                 <YAxis tick={{ fill: '#94a3b8', fontSize: 11 }} axisLine={false} tickLine={false} />
                 <Tooltip contentStyle={{ background: '#0b1116', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 16, color: '#e5e7eb' }} />
                 <Legend />
-                <Bar dataKey="usable" fill="#f9a93a" />
-                <Bar dataKey="wrong" fill="#ff6f61" />
-                <Bar dataKey="failSecure" fill="#94a3b8" />
-                <Bar dataKey="recovery" fill="#4fd0b0" />
-                <Bar dataKey="authority" fill="#72c8a0" />
+                <Bar dataKey="usable" fill="#f9a93a" onClick={selectProtocolFromBar} cursor="pointer" />
+                <Bar dataKey="wrong" fill="#ff6f61" onClick={selectProtocolFromBar} cursor="pointer" />
+                <Bar dataKey="failSecure" fill="#94a3b8" onClick={selectProtocolFromBar} cursor="pointer" />
+                <Bar dataKey="recovery" fill="#4fd0b0" onClick={selectProtocolFromBar} cursor="pointer" />
+                <Bar dataKey="authority" fill="#72c8a0" onClick={selectProtocolFromBar} cursor="pointer" />
               </BarChart>
             </ResponsiveContainer>
           </div>

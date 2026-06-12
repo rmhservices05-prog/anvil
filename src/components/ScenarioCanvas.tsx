@@ -21,10 +21,17 @@ export function ScenarioCanvas({
   const coord = (x: number, y: number) => ({ left: `${x}%`, top: `${y}%` });
   return (
     <Card className="relative min-h-[520px] overflow-hidden border-white/[0.07] bg-[#171717]">
-      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),transparent_18%)]" />
-      <div className="absolute inset-0 opacity-55 [background-image:linear-gradient(rgba(255,255,255,0.035)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.035)_1px,transparent_1px)] [background-size:28px_28px]" />
-      <div className="relative flex items-center justify-between border-b border-white/[0.06] px-4 py-4">
-        <div>
+      <iframe
+        title="Real world map backdrop"
+        aria-hidden="true"
+        className="absolute inset-0 h-full w-full border-0 opacity-90"
+        style={{ filter: 'invert(1) hue-rotate(180deg) saturate(0.75) brightness(0.48) contrast(1.12)' }}
+        src="https://www.openstreetmap.org/export/embed.html?bbox=-0.18%2C51.46%2C0.12%2C51.57&layer=mapnik"
+      />
+      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(7,10,16,0.12),rgba(7,10,16,0.35))]" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(15,47,90,0.16),transparent_48%)]" />
+      <div className="relative mx-4 mt-4 flex items-center justify-between rounded-[10px] border border-white/[0.14] bg-[#0d1118]/68 px-4 py-4 shadow-[0_18px_60px_rgba(0,0,0,0.28)] backdrop-blur-md">
+        <div className="min-w-0">
           <div className="flex items-center gap-2">
             <span className="inline-flex h-7 w-7 items-center justify-center rounded-[4px] border border-[#2358ca]/35 bg-[#102247] text-[#4f8cff]">
               <Radar size={13} strokeWidth={2.2} className="text-[#4f8cff]" />
@@ -33,7 +40,7 @@ export function ScenarioCanvas({
           </div>
           <div className="text-[13px] font-medium text-[#f3f3f3]">Network and attack pressure in motion</div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2">
           {sessionPhase ? <Badge tone={sessionPhase === 'running' ? 'success' : sessionPhase === 'review' ? 'amber' : 'warn'}>{sessionPhase}</Badge> : null}
           {typeof alertCount === 'number' ? <Badge tone={alertCount > 0 ? 'warn' : 'success'}>{alertCount} alerts</Badge> : null}
         </div>
