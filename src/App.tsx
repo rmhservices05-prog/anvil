@@ -241,7 +241,6 @@ function renderScreenContent(state: SimulationState, dispatch: ReturnType<typeof
           onStep={() => dispatch({ type: 'step' })}
           onToggleAttack={(attack) => dispatch({ type: 'toggle-attack', attack })}
           onChangeAttackParam={(key, value) => dispatch({ type: 'set-attack-param', key, value })}
-          onChangePhase={(phase) => dispatch({ type: 'set-phase', phase })}
           onSelectNode={(node) => dispatch({ type: 'select-node', id: node.id })}
           onSelectEvent={(id) => dispatch({ type: 'select-event', id })}
           onInjectAttack={() => dispatch({ type: 'inject-attack' })}

@@ -1,6 +1,4 @@
 import { ScenarioCanvas } from '../../components/ScenarioCanvas';
-import { TimelineScrubber } from '../../components/TimelineScrubber';
-import { SectionHeader } from '../../components/SectionHeader';
 import { Badge, Button, Card } from '../../components/ui';
 import { cn } from '../../lib/utils';
 import { AttackType, NetworkNode, SimulationState } from '../../types';
@@ -18,7 +16,6 @@ export function LiveExerciseScreen({
   onStep,
   onToggleAttack,
   onChangeAttackParam,
-  onChangePhase,
   onSelectNode,
   onSelectEvent,
   onInjectAttack,
@@ -31,7 +28,6 @@ export function LiveExerciseScreen({
   onStep: () => void;
   onToggleAttack: (attack: AttackType) => void;
   onChangeAttackParam: (key: 'attackIntensity' | 'attackPersistence' | 'attackCoordination' | 'attackStealth', value: number) => void;
-  onChangePhase: (phase: SimulationState['phase']) => void;
   onSelectNode: (node: NetworkNode) => void;
   onSelectEvent: (id: string) => void;
   onInjectAttack: () => void;
@@ -57,16 +53,7 @@ export function LiveExerciseScreen({
 
   return (
     <div className="space-y-6">
-      <SectionHeader
-        eyebrow="Live Exercise"
-        title="Interactive contested-spectrum simulation"
-        description="Take the forged attack from the workbench and play it through the shared session."
-        tag={state.session.phase}
-        icon={<Radar size={14} strokeWidth={2.2} className="text-[#4f8cff]" />}
-      />
-      <TimelineScrubber phase={state.phase} onChange={onChangePhase} />
-
-      <div className="grid gap-6 xl:grid-cols-[1.28fr_0.72fr]">
+      <div className="relative">
         <div className="space-y-4">
           <ScenarioCanvas
             nodes={state.nodes}
@@ -77,7 +64,7 @@ export function LiveExerciseScreen({
             alertCount={state.summary.alertCount}
           />
         </div>
-        <Card className="space-y-4">
+        <Card className="mt-4 space-y-4 border-white/15 bg-white/[0.08] shadow-[0_20px_80px_rgba(0,0,0,0.28)] backdrop-blur-xl lg:absolute lg:right-4 lg:top-4 lg:mt-0 lg:w-[340px]">
           <div className="flex items-center justify-between gap-3">
             <div>
               <div className="micro-label">Live state</div>
@@ -90,7 +77,7 @@ export function LiveExerciseScreen({
             <MetricTile label="Threat pressure" value={`${Math.round(state.threatPressure)}`} tone={state.threatPressure > 60 ? 'hostile' : state.threatPressure > 32 ? 'amber' : 'trust'} icon={<ShieldAlert size={13} className="text-[#4f8cff]" />} />
             <MetricTile label="Connection" value={state.connectionState} tone={state.connectionState === 'connected' ? 'trust' : state.connectionState === 'degraded' ? 'amber' : 'hostile'} icon={<Activity size={13} className="text-[#4f8cff]" />} />
           </div>
-          <div className="rounded-xl border border-white/6 bg-black/20 p-3">
+          <div className="rounded-xl border border-white/10 bg-white/[0.04] p-3">
             <div className="micro-label">Selected node</div>
             {selectedNode ? (
               <div className="mt-2 space-y-1">
@@ -114,7 +101,7 @@ export function LiveExerciseScreen({
         </Card>
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
+      <div className="space-y-4">
         <Card className="space-y-4 relative overflow-hidden">
           <div className="pointer-events-none absolute inset-y-0 left-0 w-28 animate-stream-sweep bg-gradient-to-r from-transparent via-white/[0.08] to-transparent" />
           <div className="flex items-center justify-between gap-3">
@@ -126,7 +113,6 @@ export function LiveExerciseScreen({
                   {livePulseLabel}
                 </Badge>
               </div>
-              <div className="text-base font-semibold text-white">Live attack effect</div>
             </div>
             <div className="flex items-center gap-2">
               <Badge tone={state.summary.alertCount > 0 ? 'warn' : 'success'}>{state.summary.alertCount} alerts</Badge>
@@ -139,7 +125,6 @@ export function LiveExerciseScreen({
             <LiveStateChart series={state.series} />
           </div>
         </Card>
-
         <Card className="space-y-4">
           <div className="flex items-center justify-between gap-3 border-b border-white/[0.06] pb-4">
             <div className="flex items-center gap-2">
@@ -148,7 +133,6 @@ export function LiveExerciseScreen({
               </span>
               <div>
                 <div className="micro-label">Timeline</div>
-                <div className="text-base font-semibold text-white">Recent events</div>
               </div>
             </div>
             <Button variant="outline" onClick={onStep}>
